@@ -1,0 +1,32 @@
+# Dependências
+node_modules
+.pnpm-store
+
+# Build
+dist
+build
+.next
+.vite
+
+# Banco local (SQLite)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Variáveis de ambiente (NUNCA commitar)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor/SO
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example

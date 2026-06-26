@@ -1,0 +1,13 @@
+{
+  "name": "lasanharia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema web de pedidos para loja de lasanhas e refrigerantes (finaliza via wa.me)",
+  "scripts": {
+    "db:migrate": "pnpm --filter backend exec prisma migrate dev",
+    "db:seed": "pnpm --filter backend db:seed",
+    "db:studio": "pnpm --filter backend exec prisma studio",
+    "db:reset": "pnpm --filter backend exec prisma migrate reset"
+  },
+  "packageManager": "pnpm@9.12.0"
+}

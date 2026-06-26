@@ -1,0 +1,99 @@
+// Schema do Lasanharia.
+// Decisão: valores monetários são Int em centavos. Ver CLAUDE.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model StoreConfig {
+  id              Int      @id @default(autoincrement())
+  storeName       String
+  whatsappNumber  String
+  address         String
+  isOpen          Boolean  @default(true)
+  preparationTime String
+  announcement    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  products  Product[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  price       Int
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  imageUrl    String?
+  available   Boolean  @default(true)
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  orderNumber   Int         @unique
+  customerName  String
+  customerPhone String
+  orderType     String
+  address       String?
+  addressNumber String?
+  neighborhood  String?
+  reference     String?
+  notes         String?
+  paymentMethod String
+  changeFor     Int?
+  subtotal      Int
+  deliveryFee   Int         @default(0)
+  total         Int
+  status        String      @default("Pendente")
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          Int    @id @default(autoincrement())
+  orderId     Int
+  order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   Int
+  productName String
+  quantity    Int
+  unitPrice   Int
+  totalPrice  Int
+
+  @@index([orderId])
+}
+
+model DeliveryZone {
+  id           Int     @id @default(autoincrement())
+  neighborhood String  @unique
+  fee          Int
+  active       Boolean @default(true)
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
