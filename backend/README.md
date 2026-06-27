@@ -127,6 +127,81 @@ Erros comuns (status 400):
 - `DELIVERY_ZONE_NOT_FOUND` — bairro não cadastrado em `DeliveryZone`.
 - `CHANGE_LESS_THAN_TOTAL` — `changeFor` menor que o total.
 
+## Rotas admin (Fase 3)
+
+Login é a única rota pública sob `/api/admin`. Todas as outras exigem header
+`Authorization: Bearer <token>`. Sem token → `401 AUTH_MISSING`. Token
+inválido/expirado → `401 AUTH_INVALID` / `401 AUTH_EXPIRED`.
+
+### `POST /api/admin/login`
+```bash
+curl -s -X POST http://localhost:3000/api/admin/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@admin.com","password":"admin123"}' | jq
+# → { "token": "...", "expiresIn": "12h", "admin": { "id": 1, "email": "..." } }
+```
+
+Use o token assim:
+```bash
+TOKEN=$(curl -s -X POST http://localhost:3000/api/admin/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@admin.com","password":"admin123"}' | jq -r .token)
+```
+
+### Pedidos
+```bash
+# Lista (mais recentes primeiro). Filtros: ?status=Pendente&take=50
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/orders | jq
+
+# Mudar status (valida contra a lista permitida)
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"status":"Confirmado"}' \
+  http://localhost:3000/api/admin/orders/1/status | jq
+```
+Status permitidos: `Pendente`, `Confirmado`, `Em preparo`, `Saiu para entrega`, `Entregue`, `Cancelado`.
+
+### Produtos
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/products | jq
+
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"Pudim","description":"de leite","price":900,"categoryId":1}' \
+  http://localhost:3000/api/admin/products | jq
+
+curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"available":false}' \
+  http://localhost:3000/api/admin/products/9 | jq
+
+curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/admin/products/9 -o /dev/null -w '%{http_code}\n'
+```
+
+### Categorias
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/categories | jq
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"Sobremesas","sortOrder":4}' http://localhost:3000/api/admin/categories | jq
+curl -s -X PUT  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"active":false}' http://localhost:3000/api/admin/categories/4 | jq
+```
+
+### Bairros (zonas de entrega)
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/delivery-zones | jq
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"neighborhood":"Vila Madalena","fee":1500}' http://localhost:3000/api/admin/delivery-zones | jq
+curl -s -X PUT  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"fee":1800}' http://localhost:3000/api/admin/delivery-zones/5 | jq
+```
+
+### Configuração da loja
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/store | jq
+curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"isOpen":false,"announcement":"Fechados para limpeza, voltamos 19h"}' \
+  http://localhost:3000/api/admin/store | jq
+```
+
 ## Estrutura
 ```
 backend/
@@ -135,18 +210,27 @@ backend/
 │   ├── seed.ts
 │   └── migrations/
 └── src/
-    ├── index.ts              # entrypoint (sobe o servidor)
-    ├── app.ts                # createApp(): CORS, json, rotas, errorHandler
-    ├── env.ts                # validação de env com Zod
-    ├── prisma.ts             # singleton do PrismaClient
+    ├── index.ts                  # entrypoint (sobe o servidor)
+    ├── app.ts                    # createApp(): CORS, json, rotas, errorHandler
+    ├── env.ts                    # validação de env (DATABASE_URL, JWT_SECRET, PORT)
+    ├── prisma.ts                 # singleton do PrismaClient
     ├── middleware/
-    │   └── errorHandler.ts   # HttpError, notFound, errorHandler
+    │   ├── errorHandler.ts       # HttpError, notFound, errorHandler
+    │   └── requireAuth.ts        # valida Bearer JWT, anexa req.admin
     └── routes/
-        ├── store.ts
-        ├── categories.ts
-        ├── products.ts
-        ├── deliveryZones.ts
-        └── orders.ts
+        ├── store.ts              # GET /api/store
+        ├── categories.ts         # GET /api/categories
+        ├── products.ts           # GET /api/products
+        ├── deliveryZones.ts      # GET /api/delivery-zones
+        ├── orders.ts             # POST /api/orders
+        └── admin/
+            ├── index.ts          # monta /api/admin (login solto, resto protegido)
+            ├── login.ts          # POST /api/admin/login
+            ├── orders.ts         # GET, PATCH /:id/status
+            ├── products.ts       # GET, POST, PUT, DELETE
+            ├── categories.ts     # GET, POST, PUT
+            ├── deliveryZones.ts  # GET, POST, PUT
+            └── store.ts          # GET, PUT
 ```
 
 ## Notas
