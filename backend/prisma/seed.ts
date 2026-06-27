@@ -51,6 +51,7 @@ async function main() {
         categoryId: lasanhas.id,
         available: true,
         featured: false,
+        countsForLoyalty: true, // conta para o programa de fidelidade
       },
       {
         name: 'Lasanha de Frango Grande',
@@ -59,6 +60,7 @@ async function main() {
         categoryId: lasanhas.id,
         available: true,
         featured: true,
+        countsForLoyalty: true,
       },
       {
         name: 'Lasanha Bolonhesa Pequena',
@@ -67,6 +69,7 @@ async function main() {
         categoryId: lasanhas.id,
         available: true,
         featured: false,
+        countsForLoyalty: true,
       },
       {
         name: 'Lasanha Bolonhesa Grande',
@@ -75,6 +78,7 @@ async function main() {
         categoryId: lasanhas.id,
         available: true,
         featured: true,
+        countsForLoyalty: true,
       },
       {
         name: 'Coca-Cola 350ml',

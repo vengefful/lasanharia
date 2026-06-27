@@ -49,6 +49,36 @@ A validação contra a lista permitida (`Pendente`, `Confirmado`, `Em preparo`, 
 ### `orderNumber` sequencial começando em 1000
 Mais agradável visualmente que ID 1, 2, 3. Race condition é desprezível (uma loja, baixo throughput), mas mesmo assim será gerado dentro de transação na Fase 2.
 
+## Programa de Fidelidade
+
+Construído em fases (F1–F4); ver tabela ao final. Esta seção registra as **regras** — fonte da verdade do programa, independentemente de quando cada parte for implementada.
+
+### Regras
+- **Cadastro opcional, sem senha**, identificado pelo telefone do cliente. Quem não opta compra normal.
+- A unidade de conta é a **lasanha**, não o pedido: 3 lasanhas = 3 pontos. **Um produto conta para fidelidade ou não** segundo um **flag por produto** (`Product.countsForLoyalty`), **não** pela categoria — assim a loja pode incluir/excluir itens individualmente.
+- **Meta**: 10 pontos = 1 lasanha grátis (qualquer sabor; preços iguais entre as lasanhas).
+- **Pontos creditados APÓS a entrega** (status `Entregue`), nunca no momento do pedido nem da confirmação.
+- **Crédito idempotente**: um pedido nunca credita pontos duas vezes. Mesmo que o status vá-e-volte do `Entregue`, só credita uma vez. A trava vive no próprio pedido (`Order.pointsEarned > 0` indica que já creditou).
+- **Cancelamento de pedido JÁ ENTREGUE** (que já creditou pontos) **estorna** os pontos creditados (debita do saldo). `totalEarned` é histórico bruto e não decrementa.
+- **Resgate**: ao atingir 10 pontos, o cliente pode marcar "usar lasanha grátis" num pedido novo. O resgate **debita 10 pontos** e marca `Order.isRedemption = true`. Lasanhas pagas no **mesmo pedido do resgate** também pontuam normalmente (não há "tudo grátis por causa do resgate").
+- Só pedido com **pelo menos 1 item `countsForLoyalty=true`** interage com o programa (cliente fidelidade, pontuação, resgate).
+
+### Modelo de dados (F1)
+
+- **`LoyaltyCustomer`** — id, `phone @unique` (só dígitos, sem o 55), name, `points` (saldo atual; sobe com crédito, desce com resgate ou estorno), `totalEarned` (histórico acumulado, **nunca decrementa**), createdAt, updatedAt.
+- **`Product.countsForLoyalty`** — Boolean, default `false`. Marca o produto como elegível pra contar pontos.
+- **`Order.loyaltyCustomerId`** — FK opcional pra `LoyaltyCustomer` (`onDelete: SetNull`). Pedido sem programa fica `null`.
+- **`Order.isRedemption`** — Boolean, default `false`. Indica que este pedido usou o "lasanha grátis" do resgate.
+- **`Order.pointsEarned`** — Int, default `0`. Quantos pontos este pedido creditou ao saldo, preenchido na transição para `Entregue`. Serve simultaneamente como **registro** e como **trava de idempotência**: `pointsEarned > 0` → já creditou, não credita de novo.
+
+### Fases do módulo
+| Fase | Escopo |
+|---|---|
+| **F1** | Schema + migration aditiva. Sem lógica, sem endpoints, sem telas. |
+| **F2** | Backend: lógica de pontos no PATCH `/api/admin/orders/:id/status` (crédito em Entregue, estorno em Cancelado pós-entrega, idempotência); resgate no POST `/api/orders`. |
+| **F3** | Frontend cliente: opt-in no checkout (telefone+nome), seleção de "usar lasanha grátis" quando houver saldo, indicador de pontos. |
+| **F4** | Admin: aba "Fidelidade" com lista de clientes do programa, saldo, histórico, marcação de `countsForLoyalty` nos produtos. |
+
 ## Estrutura
 ```
 /

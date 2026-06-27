@@ -70,7 +70,7 @@ async function main() {
   } else {
     await prisma.storeConfig.create({
       data: {
-        storeName: 'Lasanhas da Dona Maria',
+        storeName: 'Lasanha da Vovó Magal',
         whatsappNumber: '',
         pixKey: '',
         address: '',

@@ -47,6 +47,9 @@ model Product {
   imageUrl    String?
   available   Boolean  @default(true)
   featured    Boolean  @default(false)
+  // Programa de Fidelidade (ver CLAUDE.md): se true, cada unidade vendida deste produto
+  // vale 1 ponto no crédito (na entrega). Marcado caso a caso, NÃO por categoria.
+  countsForLoyalty Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -71,11 +74,24 @@ model Order {
   total         Int
   status        String      @default("Pendente")
   items         OrderItem[]
+
+  // Programa de Fidelidade (ver CLAUDE.md).
+  //   loyaltyCustomerId — null se o pedido não está vinculado ao programa.
+  //   isRedemption      — true se este pedido usa o resgate de "lasanha grátis".
+  //   pointsEarned      — quantos pontos este pedido creditou ao saldo do cliente.
+  //                       Preenchido na transição para "Entregue". Serve como trava
+  //                       de idempotência: > 0 significa "já creditou, não crédite de novo".
+  loyaltyCustomerId Int?
+  loyaltyCustomer   LoyaltyCustomer? @relation(fields: [loyaltyCustomerId], references: [id], onDelete: SetNull)
+  isRedemption      Boolean          @default(false)
+  pointsEarned      Int              @default(0)
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@index([status])
   @@index([createdAt])
+  @@index([loyaltyCustomerId])
 }
 
 model OrderItem {
@@ -96,4 +112,18 @@ model AdminUser {
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
+}
+
+// Programa de Fidelidade (ver CLAUDE.md). Cliente identificado pelo telefone,
+// sem senha. points = saldo atual (sobe com crédito, desce com resgate/estorno).
+// totalEarned = histórico bruto acumulado, NUNCA decrementa.
+model LoyaltyCustomer {
+  id          Int      @id @default(autoincrement())
+  phone       String   @unique
+  name        String
+  points      Int      @default(0)
+  totalEarned Int      @default(0)
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
