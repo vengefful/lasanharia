@@ -3,7 +3,9 @@ dist
 .env
 .env.local
 
-# SQLite local
+# SQLite local — NUNCA commitar (também coberto pelo .gitignore raiz, redundância proposital)
 prisma/*.db
 prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
 prisma/migrations/dev.db*

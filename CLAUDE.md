@@ -52,21 +52,68 @@ Mais agradável visualmente que ID 1, 2, 3. Race condition é desprezível (uma 
 ## Estrutura
 ```
 /
-├── backend/
+├── backend/                  Express 5 + Prisma 6 + SQLite
 │   ├── prisma/
 │   │   ├── schema.prisma
-│   │   └── seed.ts
-│   ├── src/                 (Fase 2 em diante)
+│   │   ├── seed.ts           (DEV — loja + 8 produtos + admin@admin.com/admin123)
+│   │   ├── seed.prod.ts      (PROD — enxuto, loja fechada, admin via env, sem produtos)
+│   │   └── migrations/
+│   ├── src/                  (entrypoint, app, rotas públicas + /admin, middleware)
 │   ├── package.json
 │   └── tsconfig.json
-├── frontend/                (Fase 4 em diante)
-├── docs/                    (Fase 6)
+├── frontend/                 React 18 + Vite + Tailwind + RR6 + Zustand
+│   ├── src/
+│   │   ├── pages/            cliente (Storefront, Cart, Checkout, OrderSuccess)
+│   │   ├── admin/            painel (Summary, Orders, Customers, Products, Categories, Store)
+│   │   ├── components/       Header, CategoryTabs, ProductCard, CartFloatingButton
+│   │   ├── lib/              format, whatsapp, maps, customerInfo
+│   │   ├── store/cart.ts     Zustand + localStorage
+│   │   └── api/client.ts     fetch wrapper público
+│   └── package.json
+├── docs/
+│   └── deploy-lxc.md         guia de produção
+├── README.md                 setup local no macOS
 ├── pnpm-workspace.yaml
 ├── package.json
 ├── .env.example
 ├── .gitignore
 └── CLAUDE.md
 ```
+
+## Arquitetura de produção (Fase 6)
+
+Container **LXC Ubuntu/Debian** no Proxmox, single-tenant, sem IP público:
+
+```
+Internet ──► Cloudflare (HTTPS) ──► Cloudflare Tunnel
+                                          │
+                                          ▼
+                                    cloudflared (no LXC)
+                                          │
+                                          ▼
+                                  Nginx :80 (no LXC)
+                                  ├── /           → dist/ estático (SPA com try_files)
+                                  └── /api/*      → 127.0.0.1:3000
+                                                          │
+                                                          ▼
+                                                  Backend Node (PM2)
+                                                          │
+                                                          ▼
+                                                  SQLite (arquivo local)
+```
+
+Pontos não-óbvios:
+- **HTTPS é terminado na Cloudflare**, não no Nginx — sem Certbot/Let's Encrypt, sem porta aberta no roteador.
+- O DNS do domínio (`.com.br` registrado no registro.br) precisa estar gerenciado pela Cloudflare.
+- O backend escuta em `127.0.0.1:3000` e o Nginx escuta em `127.0.0.1:80`; o único processo que fala com o mundo é o `cloudflared`.
+- **Backup do SQLite** é `sqlite3 .backup` (não `cp` cru, pra não corromper durante escrita), cron diário, replicado para fora do LXC.
+- **Seeds não se misturam**: dev (`db:seed`) e prod (`db:seed:prod`) coexistem. Em produção rodar `db:seed` ou `db:reset` apaga dados reais. O `db:seed:prod` se recusa a rodar se `Order > 0`.
+
+## Documentação operacional
+
+- [`README.md`](./README.md) — setup local no macOS (Mac, node, pnpm, .env, migrations, seed de dev).
+- [`docs/deploy-lxc.md`](./docs/deploy-lxc.md) — deploy de produção passo a passo (LXC, cloudflared, Nginx, PM2, seed de prod, backup, restauração).
+- [`backend/README.md`](./backend/README.md) — cheat-sheet das rotas com exemplos de `curl`.
 
 ## Roadmap das 6 fases
 1. **Fase 1 (esta)** — Estrutura do monorepo, schema Prisma, seed. Sem rotas, sem frontend.

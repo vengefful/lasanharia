@@ -6,6 +6,11 @@ dist-ssr
 # Vite
 .vite
 
+# Envs locais do Vite (VITE_API_URL etc) — NUNCA commitar
+.env
+.env.local
+.env.*.local
+
 # Editor
 .idea
 .vscode/*

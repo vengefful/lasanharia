@@ -7,10 +7,13 @@ dist
 build
 .next
 .vite
+*.tsbuildinfo
 
-# Banco local (SQLite)
+# Banco local (SQLite). NUNCA commitar — dados reais ficam só no servidor.
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 
@@ -30,3 +33,9 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json.example
+
+# Artefatos de Playwright local (caso volte a usar como devDep)
+playwright-report
+test-results
+.playwright
+ms-playwright
