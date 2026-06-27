@@ -4,7 +4,6 @@ import { adminLoginRouter } from './login';
 import { adminOrdersRouter } from './orders';
 import { adminProductsRouter } from './products';
 import { adminCategoriesRouter } from './categories';
-import { adminDeliveryZonesRouter } from './deliveryZones';
 import { adminStoreRouter } from './store';
 
 export const adminRouter = Router();
@@ -17,5 +16,4 @@ adminRouter.use(requireAuth);
 adminRouter.use('/orders', adminOrdersRouter);
 adminRouter.use('/products', adminProductsRouter);
 adminRouter.use('/categories', adminCategoriesRouter);
-adminRouter.use('/delivery-zones', adminDeliveryZonesRouter);
 adminRouter.use('/store', adminStoreRouter);

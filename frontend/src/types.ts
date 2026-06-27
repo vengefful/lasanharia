@@ -29,13 +29,6 @@ export type Product = {
   featured: boolean;
 };
 
-export type DeliveryZone = {
-  id: number;
-  neighborhood: string;
-  fee: number; // centavos
-  active: boolean;
-};
-
 export type OrderType = 'entrega' | 'retirada';
 export type PaymentMethod = 'Pix' | 'Cartão na entrega' | 'Dinheiro';
 

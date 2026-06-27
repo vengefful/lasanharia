@@ -31,9 +31,9 @@ O cliente envia apenas `productId` + `quantity`. Preço, subtotal, taxa de entre
 6. Persiste `OrderItem` com `productName` e `unitPrice` **congelados** — histórico imutável.
 
 ### Frete único na loja (não por bairro)
-Cidade pequena, taxa única ou grátis. O frete vive em `StoreConfig.deliveryFee` (centavos, default 0). O bairro do cliente é texto livre, capturado só para o atendente saber onde entregar; não há tabela ativa de zonas no fluxo de pedido.
+Cidade pequena, taxa única ou grátis. O frete vive em `StoreConfig.deliveryFee` (centavos, default 0). O bairro do cliente é texto livre, capturado só para o atendente saber onde entregar.
 
-O model `DeliveryZone` e suas rotas admin continuam no projeto como **legado** (não usados pelo cliente). Podem servir no futuro se a loja crescer; por ora estão dormindo.
+O sistema antigo de **zonas por bairro** (`model DeliveryZone`) foi removido por completo na migration `remove_delivery_zone`: o model, as rotas (`GET /api/delivery-zones` e `/api/admin/delivery-zones`), o seed e os tipos no frontend não existem mais. Se um dia for preciso voltar a cobrar por bairro, recriar do zero.
 
 ### Número do WhatsApp — fonte da verdade única
 O número que recebe o pedido fica em **`StoreConfig.whatsappNumber`** no banco. O frontend lê via `GET /api/store` e usa em `buildWhatsAppUrl(store.whatsappNumber, ...)`. Não há env var no frontend para isso.
@@ -70,7 +70,7 @@ Mais agradável visualmente que ID 1, 2, 3. Race condition é desprezível (uma 
 
 ## Roadmap das 6 fases
 1. **Fase 1 (esta)** — Estrutura do monorepo, schema Prisma, seed. Sem rotas, sem frontend.
-2. **Fase 2** — Backend: rotas públicas (`/api/store`, `/api/categories`, `/api/products`, `/api/delivery-zones`, `POST /api/orders`). Express, Zod, cálculo de totais no servidor.
+2. **Fase 2** — Backend: rotas públicas (`/api/store`, `/api/categories`, `/api/products`, `POST /api/orders`). Express, Zod, cálculo de totais no servidor.
 3. **Fase 3** — Backend admin: `POST /api/admin/login` (JWT + bcrypt), middleware de auth, CRUD protegido de pedidos/produtos/categorias/zonas/loja.
 4. **Fase 4** — Frontend cliente: cardápio, carrinho (Zustand), checkout, abre `wa.me` com a mensagem do pedido.
 5. **Fase 5** — Painel admin no frontend (rotas `/admin`): login, lista de pedidos com polling, mudar status, CRUD de produtos/categorias/zonas, configurar loja.

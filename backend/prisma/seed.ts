@@ -10,7 +10,6 @@ async function main() {
   await prisma.order.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
-  await prisma.deliveryZone.deleteMany();
   await prisma.storeConfig.deleteMany();
   await prisma.adminUser.deleteMany();
 
@@ -110,16 +109,6 @@ async function main() {
     ],
   });
 
-  // Zonas de entrega (taxa em centavos)
-  await prisma.deliveryZone.createMany({
-    data: [
-      { neighborhood: 'Centro', fee: 500, active: true },
-      { neighborhood: 'Vila Nova', fee: 700, active: true },
-      { neighborhood: 'Jardim das Flores', fee: 900, active: true },
-      { neighborhood: 'Bairro Alto', fee: 1200, active: true },
-    ],
-  });
-
   // ATENÇÃO: trocar essa senha antes do deploy. Está aqui só para desenvolvimento.
   // Em produção: crie o admin via uma rota/script protegido ou edite direto no banco.
   const passwordHash = await bcrypt.hash('admin123', 10);
@@ -134,7 +123,6 @@ async function main() {
   console.log('   Loja:        Lasanhas da Dona Maria');
   console.log('   Categorias:  3 (Lasanhas, Refrigerantes, Combos)');
   console.log('   Produtos:    8');
-  console.log('   Bairros:     4');
   console.log('   Admin:       admin@admin.com / admin123  ← TROCAR ANTES DO DEPLOY');
 }
 

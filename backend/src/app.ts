@@ -3,7 +3,6 @@ import cors from 'cors';
 import { storeRouter } from './routes/store';
 import { categoriesRouter } from './routes/categories';
 import { productsRouter } from './routes/products';
-import { deliveryZonesRouter } from './routes/deliveryZones';
 import { ordersRouter } from './routes/orders';
 import { adminRouter } from './routes/admin';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -21,7 +20,6 @@ export function createApp() {
   app.use('/api/store', storeRouter);
   app.use('/api/categories', categoriesRouter);
   app.use('/api/products', productsRouter);
-  app.use('/api/delivery-zones', deliveryZonesRouter);
   app.use('/api/orders', ordersRouter);
   app.use('/api/admin', adminRouter);
 

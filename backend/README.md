@@ -48,12 +48,6 @@ curl -s http://localhost:3000/api/products | jq
 curl -s 'http://localhost:3000/api/products?categoryId=1' | jq
 ```
 
-### `GET /api/delivery-zones`
-Bairros atendidos + taxa em centavos.
-```bash
-curl -s http://localhost:3000/api/delivery-zones | jq
-```
-
 ### `POST /api/orders`
 Cria um pedido. **O servidor é a fonte da verdade dos preços e totais** — qualquer `price` enviado no corpo é ignorado.
 
@@ -124,7 +118,6 @@ Erros comuns (status 400):
 - `VALIDATION_ERROR` — campo faltando/inválido (Zod).
 - `PRODUCT_NOT_FOUND` — `productId` não existe.
 - `PRODUCT_UNAVAILABLE` — produto marcado como indisponível.
-- `DELIVERY_ZONE_NOT_FOUND` — bairro não cadastrado em `DeliveryZone`.
 - `CHANGE_LESS_THAN_TOTAL` — `changeFor` menor que o total.
 
 ## Rotas admin (Fase 3)
@@ -185,21 +178,15 @@ curl -s -X PUT  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/
   -d '{"active":false}' http://localhost:3000/api/admin/categories/4 | jq
 ```
 
-### Bairros (zonas de entrega)
-```bash
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/delivery-zones | jq
-curl -s -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"neighborhood":"Vila Madalena","fee":1500}' http://localhost:3000/api/admin/delivery-zones | jq
-curl -s -X PUT  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"fee":1800}' http://localhost:3000/api/admin/delivery-zones/5 | jq
-```
-
 ### Configuração da loja
+Inclui o **frete único** (`deliveryFee`, em centavos; 0 = grátis). Não existe mais tabela de zonas por bairro — bairro é texto livre no pedido.
 ```bash
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/admin/store | jq
 curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"isOpen":false,"announcement":"Fechados para limpeza, voltamos 19h"}' \
   http://localhost:3000/api/admin/store | jq
+curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"deliveryFee":700}' http://localhost:3000/api/admin/store | jq
 ```
 
 ## Estrutura
@@ -221,7 +208,6 @@ backend/
         ├── store.ts              # GET /api/store
         ├── categories.ts         # GET /api/categories
         ├── products.ts           # GET /api/products
-        ├── deliveryZones.ts      # GET /api/delivery-zones
         ├── orders.ts             # POST /api/orders
         └── admin/
             ├── index.ts          # monta /api/admin (login solto, resto protegido)
@@ -229,8 +215,7 @@ backend/
             ├── orders.ts         # GET, PATCH /:id/status
             ├── products.ts       # GET, POST, PUT, DELETE
             ├── categories.ts     # GET, POST, PUT
-            ├── deliveryZones.ts  # GET, POST, PUT
-            └── store.ts          # GET, PUT
+            └── store.ts          # GET, PUT (inclui deliveryFee)
 ```
 
 ## Notas

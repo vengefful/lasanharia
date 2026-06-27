@@ -88,7 +88,7 @@ ordersRouter.post('/', async (req, res) => {
   const subtotal = orderItems.reduce((sum, i) => sum + i.totalPrice, 0);
 
   // 4. Frete único: 0 se retirada; senão usa StoreConfig.deliveryFee (0 = grátis).
-  //    O bairro é só texto livre; não consulta DeliveryZone no fluxo do cliente.
+  //    Bairro é texto livre — não há mais tabela de zonas.
   const deliveryFee = input.orderType === 'entrega' ? store.deliveryFee : 0;
 
   // 5. Total final.

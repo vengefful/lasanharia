@@ -1,11 +1,4 @@
-import type {
-  Category,
-  CreateOrderInput,
-  DeliveryZone,
-  Order,
-  Product,
-  Store,
-} from '../types';
+import type { Category, CreateOrderInput, Order, Product, Store } from '../types';
 
 const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
@@ -64,7 +57,6 @@ export const api = {
   getCategories: () => request<Category[]>('/api/categories'),
   getProducts: (categoryId?: number) =>
     request<Product[]>(`/api/products${categoryId ? `?categoryId=${categoryId}` : ''}`),
-  getDeliveryZones: () => request<DeliveryZone[]>('/api/delivery-zones'),
   createOrder: (body: CreateOrderInput) =>
     request<Order>('/api/orders', { method: 'POST', body: JSON.stringify(body) }),
 };
