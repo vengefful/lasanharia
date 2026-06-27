@@ -79,13 +79,33 @@ Mais agradável visualmente que ID 1, 2, 3. Race condition é desprezível (uma 
 ## Comandos úteis (depois do `pnpm install`)
 ```bash
 pnpm db:migrate         # cria/atualiza o schema no SQLite
-pnpm db:seed            # popula com dados iniciais (loja, categorias, produtos, admin)
+pnpm db:seed            # seed de DEV (loja+produtos+admin@admin.com de teste)
 pnpm db:studio          # abre Prisma Studio em http://localhost:5555
-pnpm db:reset           # apaga o banco e roda migration + seed do zero
+pnpm db:reset           # apaga o banco e roda migration + seed (dev) do zero
+
+# Seed de PRODUÇÃO — roda UMA vez no pré-lançamento, exige envs de admin:
+ADMIN_EMAIL=dona.maria@exemplo.com ADMIN_PASSWORD='senha-forte' \
+  pnpm --filter backend db:seed:prod
 ```
 
+## Dois seeds — diferenças que importam
+
+| Aspecto | `prisma/seed.ts` (DEV) | `prisma/seed.prod.ts` (PROD) |
+|---|---|---|
+| **Quando rodar** | Sempre, no Mac, em desenvolvimento | UMA vez no pré-lançamento |
+| **StoreConfig** | Dados de teste preenchidos, `isOpen: true` | Defaults neutros, **`isOpen: false`** (segurança) |
+| **Categorias** | 3 (Lasanhas, Refrigerantes, Combos) | Mesmas 3 (find-or-create) |
+| **Produtos** | 8 de teste | **Nenhum** — Dona Maria cadastra pelo painel |
+| **AdminUser** | `admin@admin.com` / `admin123` hardcoded | `ADMIN_EMAIL` / `ADMIN_PASSWORD` do env (mín. 10 chars) |
+| **Pedidos** | Não cria, mas faz `deleteMany` para rodar idempotente | Nunca toca; **aborta se `Order` > 0** |
+| **Idempotência** | Wipe-and-create | Find-or-create + upsert no admin (seguro p/ rerodar antes do lançamento) |
+
+O seed de prod tem dois guard-rails que não existem no de dev:
+1. **Aborta se já houver pedidos** no banco — proteção contra rodar por engano em banco operando.
+2. **Aborta sem ADMIN_EMAIL/ADMIN_PASSWORD** — nada de senha hardcoded em produção.
+
 ## Lembretes de segurança antes de produção
-- Trocar a senha do admin padrão (`admin@admin.com` / `admin123`) — está no seed só para desenvolvimento.
+- **Trocar o seed**: rodar `db:seed:prod` (não `db:seed`) na primeira subida; nunca usar `admin@admin.com` / `admin123` fora do Mac.
 - Gerar `JWT_SECRET` forte e único (`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`).
 - Confirmar que `.env` não está versionado.
-- Definir `STORE_WHATSAPP_NUMBER` real (formato `5511999999999`).
+- `STORE_WHATSAPP_NUMBER` no env é só default do seed de dev; em prod a Dona Maria edita pelo painel.
