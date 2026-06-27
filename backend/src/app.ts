@@ -4,6 +4,7 @@ import { storeRouter } from './routes/store';
 import { categoriesRouter } from './routes/categories';
 import { productsRouter } from './routes/products';
 import { ordersRouter } from './routes/orders';
+import { loyaltyRouter } from './routes/loyalty';
 import { adminRouter } from './routes/admin';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -21,6 +22,7 @@ export function createApp() {
   app.use('/api/categories', categoriesRouter);
   app.use('/api/products', productsRouter);
   app.use('/api/orders', ordersRouter);
+  app.use('/api/loyalty', loyaltyRouter);
   app.use('/api/admin', adminRouter);
 
   app.use(notFoundHandler);
