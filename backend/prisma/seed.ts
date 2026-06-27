@@ -21,6 +21,8 @@ async function main() {
       storeName: 'Lasanhas da Dona Maria',
       whatsappNumber: process.env.STORE_WHATSAPP_NUMBER ?? '5511999999999',
       address: 'Rua das Massas, 123 — Centro',
+      city: '',  // preenche no admin
+      state: '', // UF (2 letras), preenche no admin
       isOpen: true,
       preparationTime: '40 a 60 min',
       announcement: 'Bem-vindo! Pedidos das 18h às 23h, todos os dias.',

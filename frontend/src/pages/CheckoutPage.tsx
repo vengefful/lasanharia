@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../store/cart';
 import { api, ApiError } from '../api/client';
 import type { OrderType, PaymentMethod, Store } from '../types';
 import { formatMoney, parseMoneyToCents } from '../lib/format';
 import { buildWhatsAppMessage, buildWhatsAppUrl } from '../lib/whatsapp';
+import { loadCustomerInfo, saveCustomerInfo } from '../lib/customerInfo';
 
 const PAYMENT_METHODS: PaymentMethod[] = ['Pix', 'Cartão na entrega', 'Dinheiro'];
 
@@ -19,19 +20,62 @@ export function CheckoutPage() {
 
   const [store, setStore] = useState<Store | null>(null);
 
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [orderType, setOrderType] = useState<OrderType>(incoming.orderType ?? 'entrega');
-  const [address, setAddress] = useState('');
-  const [addressNumber, setAddressNumber] = useState('');
-  const [neighborhood, setNeighborhood] = useState(incoming.neighborhood ?? '');
-  const [reference, setReference] = useState('');
+  // Pré-preenchimento por-aparelho (localStorage). Incoming (vindo do carrinho) ainda manda.
+  const persisted = useMemo(() => loadCustomerInfo(), []);
+  const [customerName, setCustomerName] = useState(persisted.customerName ?? '');
+  const [customerPhone, setCustomerPhone] = useState(persisted.customerPhone ?? '');
+  const [orderType, setOrderType] = useState<OrderType>(
+    incoming.orderType ?? persisted.orderType ?? 'entrega',
+  );
+  const [address, setAddress] = useState(persisted.address ?? '');
+  const [addressNumber, setAddressNumber] = useState(persisted.addressNumber ?? '');
+  const [neighborhood, setNeighborhood] = useState(
+    incoming.neighborhood ?? persisted.neighborhood ?? '',
+  );
+  const [reference, setReference] = useState(persisted.reference ?? '');
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Pix');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    persisted.paymentMethod ?? 'Pix',
+  );
   const [changeForReais, setChangeForReais] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Localização opcional do cliente. NÃO persiste em lugar nenhum — só estado local.
+  // Vai junto na mensagem do WhatsApp se anexada; nunca no POST /api/orders.
+  const [geoLocation, setGeoLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  function captureLocation() {
+    if (!('geolocation' in navigator)) {
+      setGeoStatus('error');
+      setGeoError('Seu navegador não tem geolocalização. O pedido segue normal com o endereço.');
+      return;
+    }
+    setGeoStatus('loading');
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus('idle');
+      },
+      (err) => {
+        setGeoStatus('error');
+        if (err.code === err.PERMISSION_DENIED) {
+          setGeoError('Você negou a permissão. Sem problemas, o pedido segue só com o endereço.');
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setGeoError('Não consegui pegar sua localização. O pedido segue só com o endereço.');
+        } else if (err.code === err.TIMEOUT) {
+          setGeoError('Demorou demais para localizar. Tente de novo ou siga só com o endereço.');
+        } else {
+          setGeoError('Não foi possível anexar a localização. O pedido segue normal.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    );
+  }
 
   useEffect(() => {
     api
@@ -78,7 +122,23 @@ export function CheckoutPage() {
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
       });
 
-      const message = buildWhatsAppMessage(order);
+      // Persiste no aparelho do cliente — conveniência, não cadastro.
+      // Pula notes/changeFor (variam) e geoLocation (privacidade + irrelevante depois).
+      saveCustomerInfo({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        orderType,
+        address: orderType === 'entrega' ? address.trim() : '',
+        addressNumber: orderType === 'entrega' ? addressNumber.trim() : '',
+        neighborhood: orderType === 'entrega' ? neighborhood.trim() : '',
+        reference: orderType === 'entrega' ? reference.trim() : '',
+        paymentMethod,
+      });
+
+      // location só entra na mensagem; nunca no POST. Some quando null.
+      const message = buildWhatsAppMessage(order, {
+        location: orderType === 'entrega' ? geoLocation : null,
+      });
       const url = buildWhatsAppUrl(store.whatsappNumber, message);
       clearCart();
       // Salva os dados pra próxima tela conseguir reabrir se o popup foi bloqueado.
@@ -210,6 +270,51 @@ export function CheckoutPage() {
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="portão azul, ao lado da padaria…"
                 />
+              </div>
+
+              <div className="rounded-xl border border-dashed border-stone-300 p-3">
+                {geoLocation ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 text-sm">
+                      <div className="font-semibold text-emerald-700">Localização anexada ✓</div>
+                      <div className="truncate text-xs text-stone-500 tabular-nums">
+                        {geoLocation.lat.toFixed(6)}, {geoLocation.lng.toFixed(6)}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGeoLocation(null);
+                        setGeoStatus('idle');
+                        setGeoError(null);
+                      }}
+                      className="rounded-lg bg-stone-100 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-200"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={captureLocation}
+                      disabled={geoStatus === 'loading'}
+                      className="btn-secondary w-full py-2 text-sm"
+                    >
+                      {geoStatus === 'loading'
+                        ? 'Buscando sua localização…'
+                        : '📍 Estou em casa? Anexar minha localização'}
+                    </button>
+                    <p className="mt-1 text-xs text-stone-500">
+                      Opcional. O endereço acima continua obrigatório; isto só ajuda o entregador.
+                    </p>
+                    {geoError && (
+                      <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-100">
+                        {geoError}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}

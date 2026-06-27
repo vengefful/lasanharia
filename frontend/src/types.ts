@@ -3,6 +3,10 @@ export type Store = {
   storeName: string;
   whatsappNumber: string;
   address: string;
+  /** Cidade da loja — texto livre, completa o "Ver rota" no admin. */
+  city: string;
+  /** UF da loja (2 letras). */
+  state: string;
   isOpen: boolean;
   preparationTime: string;
   announcement: string | null;

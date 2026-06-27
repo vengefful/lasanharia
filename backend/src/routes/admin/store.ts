@@ -10,9 +10,14 @@ const storeUpdateSchema = z
     storeName: z.string().trim().min(1).max(120),
     whatsappNumber: z.string().trim().regex(/^\d{10,15}$/, 'WhatsApp deve conter só dígitos (DDI+DDD+número)'),
     address: z.string().trim().min(1).max(200),
+    // Cidade e UF — usados para completar a query do "Ver rota" no admin. Aceita vazio.
+    city: z.string().trim().max(80),
+    state: z.string().trim().max(2),
     isOpen: z.boolean(),
     preparationTime: z.string().trim().min(1).max(60),
     announcement: z.string().trim().max(300).nullable().optional(),
+    // Frete único da loja, em centavos. 0 = grátis.
+    deliveryFee: z.number().int().nonnegative().max(100_000),
   })
   .partial();
 

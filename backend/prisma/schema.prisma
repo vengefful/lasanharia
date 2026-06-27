@@ -15,6 +15,9 @@ model StoreConfig {
   storeName       String
   whatsappNumber  String
   address         String
+  // Cidade e UF da loja — usados para complementar o "Ver rota" do admin.
+  city            String   @default("")
+  state           String   @default("")
   isOpen          Boolean  @default(true)
   preparationTime String
   announcement    String?

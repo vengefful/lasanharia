@@ -1,12 +1,18 @@
 import type { Order } from '../types';
 import { formatMoney } from './format';
+import { buildMapsUrlFromCoords } from './maps';
 
 const TYPE_LABEL: Record<Order['orderType'], string> = {
   entrega: 'Entrega',
   retirada: 'Retirada',
 };
 
-export function buildWhatsAppMessage(order: Order): string {
+export type WhatsAppOptions = {
+  /** Localização opcional anexada pelo cliente no checkout. Só aparece em entrega. */
+  location?: { lat: number; lng: number } | null;
+};
+
+export function buildWhatsAppMessage(order: Order, options: WhatsAppOptions = {}): string {
   const lines: string[] = [];
   lines.push(`🍝 NOVO PEDIDO #${order.orderNumber}`);
   lines.push('');
@@ -19,6 +25,11 @@ export function buildWhatsAppMessage(order: Order): string {
     if (addressLine) lines.push(`Endereço: ${addressLine}`);
     if (order.neighborhood) lines.push(`Bairro: ${order.neighborhood}`);
     if (order.reference) lines.push(`Referência: ${order.reference}`);
+    if (options.location) {
+      lines.push(
+        `📍 Localização: ${buildMapsUrlFromCoords(options.location.lat, options.location.lng)}`,
+      );
+    }
   }
 
   lines.push('');
