@@ -10,11 +10,10 @@ const querySchema = z.object({
 
 productsRouter.get('/', async (req, res) => {
   const { categoryId } = querySchema.parse(req.query);
+  // Devolve produtos disponíveis e indisponíveis — o front mostra o badge "indisponível".
+  // POST /api/orders ainda recusa item com available=false.
   const products = await prisma.product.findMany({
-    where: {
-      available: true,
-      ...(categoryId ? { categoryId } : {}),
-    },
+    where: categoryId ? { categoryId } : undefined,
     include: { category: true },
     orderBy: [{ categoryId: 'asc' }, { id: 'asc' }],
   });

@@ -14,15 +14,18 @@ async function main() {
   await prisma.storeConfig.deleteMany();
   await prisma.adminUser.deleteMany();
 
-  // Configuração da loja
+  // Configuração da loja.
+  // O número de WhatsApp e a taxa de entrega são editáveis depois via admin/Prisma Studio —
+  // estes valores são apenas defaults iniciais do seed.
   await prisma.storeConfig.create({
     data: {
       storeName: 'Lasanhas da Dona Maria',
-      whatsappNumber: '5511999999999',
+      whatsappNumber: process.env.STORE_WHATSAPP_NUMBER ?? '5511999999999',
       address: 'Rua das Massas, 123 — Centro',
       isOpen: true,
       preparationTime: '40 a 60 min',
       announcement: 'Bem-vindo! Pedidos das 18h às 23h, todos os dias.',
+      deliveryFee: 0, // grátis por padrão; ajuste no admin/Prisma Studio
     },
   });
 

@@ -50,7 +50,10 @@ ordersRouter.post('/', async (req, res) => {
   const input = createOrderSchema.parse(req.body);
 
   // 0. Loja precisa estar aberta. Checa antes de qualquer outra coisa.
-  const store = await prisma.storeConfig.findFirst({ select: { isOpen: true } });
+  //    Aproveita e lê o frete único (StoreConfig.deliveryFee).
+  const store = await prisma.storeConfig.findFirst({
+    select: { isOpen: true, deliveryFee: true },
+  });
   if (!store?.isOpen) {
     throw new HttpError(400, 'STORE_CLOSED', 'A loja está fechada no momento. Tente novamente mais tarde.');
   }
@@ -84,21 +87,9 @@ ordersRouter.post('/', async (req, res) => {
   });
   const subtotal = orderItems.reduce((sum, i) => sum + i.totalPrice, 0);
 
-  // 4. Taxa de entrega: 0 se retirada; senão lê de DeliveryZone do bairro.
-  let deliveryFee = 0;
-  if (input.orderType === 'entrega') {
-    const zone = await prisma.deliveryZone.findFirst({
-      where: { neighborhood: input.neighborhood!, active: true },
-    });
-    if (!zone) {
-      throw new HttpError(
-        400,
-        'DELIVERY_ZONE_NOT_FOUND',
-        `Não entregamos no bairro "${input.neighborhood}"`,
-      );
-    }
-    deliveryFee = zone.fee;
-  }
+  // 4. Frete único: 0 se retirada; senão usa StoreConfig.deliveryFee (0 = grátis).
+  //    O bairro é só texto livre; não consulta DeliveryZone no fluxo do cliente.
+  const deliveryFee = input.orderType === 'entrega' ? store.deliveryFee : 0;
 
   // 5. Total final.
   const total = subtotal + deliveryFee;

@@ -18,6 +18,8 @@ model StoreConfig {
   isOpen          Boolean  @default(true)
   preparationTime String
   announcement    String?
+  // Frete único da loja, em centavos. 0 = grátis. Editável via admin/Prisma Studio.
+  deliveryFee     Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

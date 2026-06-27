@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-cream-50 text-stone-900 antialiased;
+    font-family: theme('fontFamily.sans');
+    overflow-x: hidden;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: theme('fontFamily.display');
+    @apply tracking-tight;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-semibold transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply btn bg-tomato-600 text-white shadow-soft hover:bg-tomato-700;
+  }
+  .btn-secondary {
+    @apply btn bg-cream-100 text-tomato-700 hover:bg-cream-200;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-stone-700 hover:bg-cream-100;
+  }
+  .input {
+    @apply w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 placeholder:text-stone-400 focus:border-tomato-500 focus:outline-none focus:ring-2 focus:ring-tomato-200;
+  }
+  .card {
+    @apply rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/60;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+}

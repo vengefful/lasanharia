@@ -22,13 +22,23 @@ Uma loja única, baixo volume, deploy em LXC ou VPS pequeno. SQLite dá: zero co
 Todos os campos de dinheiro (`price`, `unitPrice`, `totalPrice`, `subtotal`, `deliveryFee`, `total`, `changeFor`, `fee`) são `Int` em centavos. `2500` → R$ 25,00. Evita ponto flutuante e arredondamento traiçoeiro. Conversão `/100` acontece só na exibição (frontend) e na mensagem do WhatsApp.
 
 ### Totais calculados no backend, sempre
-O cliente envia apenas `productId` + `quantity`. Preço, subtotal, taxa de entrega e total são calculados pelo servidor a partir do banco. O preço enviado pelo cliente é ignorado. Em `POST /api/orders` (Fase 2), o servidor:
+O cliente envia apenas `productId` + `quantity`. Preço, subtotal, taxa de entrega e total são calculados pelo servidor a partir do banco. O preço enviado pelo cliente é ignorado. Em `POST /api/orders`, o servidor:
 1. Busca o preço atual de cada produto.
 2. Recusa item indisponível.
 3. Calcula `subtotal = Σ unitPrice × quantity`.
-4. `deliveryFee` = 0 se retirada; senão lê de `DeliveryZone` pelo bairro (erro claro se bairro não cadastrado).
+4. `deliveryFee` = 0 se retirada; senão usa **`StoreConfig.deliveryFee`** (frete único, 0 = grátis).
 5. `total = subtotal + deliveryFee`.
 6. Persiste `OrderItem` com `productName` e `unitPrice` **congelados** — histórico imutável.
+
+### Frete único na loja (não por bairro)
+Cidade pequena, taxa única ou grátis. O frete vive em `StoreConfig.deliveryFee` (centavos, default 0). O bairro do cliente é texto livre, capturado só para o atendente saber onde entregar; não há tabela ativa de zonas no fluxo de pedido.
+
+O model `DeliveryZone` e suas rotas admin continuam no projeto como **legado** (não usados pelo cliente). Podem servir no futuro se a loja crescer; por ora estão dormindo.
+
+### Número do WhatsApp — fonte da verdade única
+O número que recebe o pedido fica em **`StoreConfig.whatsappNumber`** no banco. O frontend lê via `GET /api/store` e usa em `buildWhatsAppUrl(store.whatsappNumber, ...)`. Não há env var no frontend para isso.
+
+`STORE_WHATSAPP_NUMBER` no `.env` é **apenas o default inicial do seed** (`backend/prisma/seed.ts`). Para mudar em produção, editar via painel admin (Fase 5) ou direto no Prisma Studio — não recriar `.env` nem rodar seed.
 
 ### Finalização via wa.me, não WhatsApp Business API
 O frontend monta uma mensagem textual com os dados do pedido e abre `https://wa.me/<STORE_WHATSAPP_NUMBER>?text=<encodeURIComponent(mensagem)>`. O atendente lê na conversa e confirma manualmente. Sem custos de API, sem aprovação Meta, sem template — basta um WhatsApp comum.
