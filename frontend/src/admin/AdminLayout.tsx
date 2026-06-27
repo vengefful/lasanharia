@@ -2,7 +2,9 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from './auth';
 
 const TABS: { to: string; label: string }[] = [
+  { to: '/admin/summary', label: 'Resumo' },
   { to: '/admin/orders', label: 'Pedidos' },
+  { to: '/admin/customers', label: 'Clientes' },
   { to: '/admin/products', label: 'Produtos' },
   { to: '/admin/categories', label: 'Categorias' },
   { to: '/admin/store', label: 'Loja' },

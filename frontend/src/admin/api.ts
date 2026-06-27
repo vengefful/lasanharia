@@ -116,6 +116,31 @@ export const adminApi = {
   getStore: () => adminRequest<Store>('/api/admin/store'),
   updateStore: (data: Partial<Store>) =>
     adminRequest<Store>('/api/admin/store', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Resumo / clientes
+  getStats: () => adminRequest<Stats>('/api/admin/stats'),
+  getCustomers: () => adminRequest<CustomerRow[]>('/api/admin/customers'),
+};
+
+export type Stats = {
+  totalPedidos: number;
+  faturamentoTotal: number;
+  ticketMedio: number;
+  pedidosUltimos30dias: number;
+  faturamento30dias: number;
+  mediaPedidosPorDia: number;
+  faturamentoPorMes: { ym: string; total: number; count: number }[];
+  produtosMaisVendidos: { productName: string; quantity: number; revenue: number }[];
+  divisaoEntregaRetirada: { orderType: string; count: number; pct: number }[];
+  divisaoPagamento: { paymentMethod: string; count: number }[];
+};
+
+export type CustomerRow = {
+  customerName: string;
+  customerPhone: string;
+  orderCount: number;
+  totalSpent: number;
+  lastOrderAt: string;
 };
 
 export type ProductInput = {

@@ -16,9 +16,9 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Já logado? volta para onde estava (ou /admin/orders).
+  // Já logado? volta para onde estava (ou /admin/summary).
   if (token) {
-    const from = (location.state as LocationState | null)?.from ?? '/admin/orders';
+    const from = (location.state as LocationState | null)?.from ?? '/admin/summary';
     return <Navigate to={from} replace />;
   }
 
@@ -29,7 +29,7 @@ export function LoginPage() {
     try {
       const resp = await adminApi.login(email.trim(), password);
       login(resp.token, resp.admin.email);
-      const from = (location.state as LocationState | null)?.from ?? '/admin/orders';
+      const from = (location.state as LocationState | null)?.from ?? '/admin/summary';
       navigate(from, { replace: true });
     } catch (err) {
       if (err instanceof AdminApiError) setError(err.message);
