@@ -53,8 +53,9 @@ const phone = normalizeCustomerPhone(order.customerPhone);
 console.log('Telefone bruto:', order.customerPhone);
 console.log('Normalizado:   ', phone.digits, '   (válido?', phone.valid, ')');
 console.log();
+// pixKey vazio aqui — assinatura antiga continua compatível para os outros status.
 for (const status of ['Confirmado', 'Em preparo', 'Saiu para entrega', 'Entregue'] as const) {
-  const msg = customerNotifyMessage(order.orderNumber, status);
+  const msg = customerNotifyMessage(order, status, { pixKey: '' });
   const url = buildWhatsAppUrl(phone.digits, msg);
   console.log(`  [${status}]`);
   console.log('    mensagem:', msg);

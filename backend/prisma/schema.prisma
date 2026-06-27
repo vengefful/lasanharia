@@ -23,6 +23,8 @@ model StoreConfig {
   announcement    String?
   // Frete único da loja, em centavos. 0 = grátis. Editável via admin/Prisma Studio.
   deliveryFee     Int      @default(0)
+  // Chave PIX da loja — entra na mensagem "Avisar cliente" quando pedido for Pix+Confirmado.
+  pixKey          String   @default("")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

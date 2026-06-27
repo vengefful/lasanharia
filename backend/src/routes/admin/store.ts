@@ -18,6 +18,8 @@ const storeUpdateSchema = z
     announcement: z.string().trim().max(300).nullable().optional(),
     // Frete único da loja, em centavos. 0 = grátis.
     deliveryFee: z.number().int().nonnegative().max(100_000),
+    // Chave PIX usada na mensagem "Avisar cliente" quando pedido é Pix+Confirmado.
+    pixKey: z.string().trim().max(200),
   })
   .partial();
 

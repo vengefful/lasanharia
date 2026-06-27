@@ -268,7 +268,10 @@ function OrderActions({ order, store }: { order: Order; store: Store | null }) {
   const phone = normalizeCustomerPhone(order.customerPhone);
 
   const notifyUrl = notifyStatus
-    ? buildWhatsAppUrl(phone.digits, customerNotifyMessage(order.orderNumber, notifyStatus))
+    ? buildWhatsAppUrl(
+        phone.digits,
+        customerNotifyMessage(order, notifyStatus, { pixKey: store?.pixKey ?? '' }),
+      )
     : null;
 
   const routeUrl =

@@ -13,6 +13,7 @@ type FormState = {
   preparationTime: string;
   announcement: string;
   deliveryFeeReais: string; // input em reais; convertemos para centavos no submit
+  pixKey: string;
 };
 
 export function StorePage() {
@@ -61,6 +62,7 @@ export function StorePage() {
         preparationTime: form.preparationTime.trim(),
         announcement: form.announcement.trim() || null,
         deliveryFee,
+        pixKey: form.pixKey.trim(),
       };
       const updated = await adminApi.updateStore(payload);
       setForm(storeToForm(updated));
@@ -236,6 +238,28 @@ export function StorePage() {
           </div>
         </section>
 
+        <section className="card p-5">
+          <h2 className="text-lg font-bold">PIX</h2>
+          <p className="text-sm text-stone-500">
+            Chave PIX usada na mensagem do botão <strong>"Avisar cliente"</strong> quando o pedido for
+            confirmado e o pagamento for PIX. Pode ser CPF, telefone, e-mail ou chave aleatória.
+          </p>
+          <div className="mt-3">
+            <label className="text-sm font-medium text-stone-700">Chave PIX</label>
+            <input
+              className="input mt-1"
+              value={form.pixKey}
+              onChange={(e) => setForm({ ...form, pixKey: e.target.value })}
+              placeholder="ex.: 82991413741 ou lasanharia@exemplo.com"
+              autoComplete="off"
+              maxLength={200}
+            />
+            <p className="mt-1 text-xs text-stone-500">
+              Vazio = a mensagem de confirmação pede para o cliente chamar para receber a chave.
+            </p>
+          </div>
+        </section>
+
         <div className="sticky bottom-0 -mx-4 flex justify-end gap-2 border-t border-stone-200 bg-stone-100/80 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
           <button type="submit" disabled={submitting} className="btn-primary px-5 py-2 text-sm">
             {submitting ? 'Salvando…' : 'Salvar configuração'}
@@ -257,5 +281,6 @@ function storeToForm(s: Store): FormState {
     preparationTime: s.preparationTime,
     announcement: s.announcement ?? '',
     deliveryFeeReais: (s.deliveryFee / 100).toFixed(2).replace('.', ','),
+    pixKey: s.pixKey ?? '',
   };
 }

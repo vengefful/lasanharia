@@ -12,6 +12,8 @@ export type Store = {
   announcement: string | null;
   /** Frete único da loja em centavos. 0 = grátis. */
   deliveryFee: number;
+  /** Chave PIX (CPF, telefone, email, aleatória, qualquer texto). "" = sem chave configurada. */
+  pixKey: string;
 };
 
 export type Category = {
