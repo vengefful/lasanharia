@@ -11,14 +11,13 @@ import {
   normalizeCustomerPhone,
 } from '../customerNotify';
 
-const STATUSES = [
-  'Pendente',
-  'Confirmado',
-  'Em preparo',
-  'Saiu para entrega',
-  'Entregue',
-  'Cancelado',
-] as const;
+// Próximo passo lógico do fluxo. "Entregue" e "Cancelado" são terminais (sem avançar).
+const NEXT_STATUS: Record<string, { label: string; status: string }> = {
+  Pendente: { label: 'Confirmar', status: 'Confirmado' },
+  Confirmado: { label: 'Em preparo', status: 'Em preparo' },
+  'Em preparo': { label: 'Saiu para entrega', status: 'Saiu para entrega' },
+  'Saiu para entrega': { label: 'Entregue', status: 'Entregue' },
+};
 
 const STATUS_STYLE: Record<string, string> = {
   Pendente: 'bg-amber-100 text-amber-800 ring-amber-200',
@@ -168,8 +167,8 @@ export function OrdersPage() {
                 isNew ? 'ring-2 ring-emerald-400 shadow-soft' : ''
               }`}
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-bold">#{o.orderNumber}</h2>
                     {isNew && (
@@ -190,20 +189,6 @@ export function OrdersPage() {
                     {o.customerName} · {o.customerPhone} ·{' '}
                     {new Date(o.createdAt).toLocaleString('pt-BR')}
                   </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={o.status}
-                    disabled={updatingId === o.id}
-                    onChange={(e) => changeStatus(o, e.target.value)}
-                    className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm font-semibold focus:border-tomato-500 focus:outline-none"
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
@@ -269,7 +254,12 @@ export function OrdersPage() {
                 )}
               </div>
 
-              <OrderActions order={o} store={store} />
+              <OrderActions
+                order={o}
+                store={store}
+                updating={updatingId === o.id}
+                onChangeStatus={changeStatus}
+              />
             </li>
           );
         })}
@@ -278,16 +268,32 @@ export function OrdersPage() {
   );
 }
 
-function OrderActions({ order, store }: { order: Order; store: Store | null }) {
+function OrderActions({
+  order,
+  store,
+  updating,
+  onChangeStatus,
+}: {
+  order: Order;
+  store: Store | null;
+  updating: boolean;
+  onChangeStatus: (order: Order, status: string) => void;
+}) {
+  // Confirmação inline do cancelamento — cancelar pode estornar pontos de fidelidade,
+  // então não pode disparar num clique acidental.
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+
+  // Rótulo e mensagem do "Avisar" SEMPRE leem o status CORRENTE de order (já refletido
+  // pela atualização otimista de changeStatus). Pendente/Cancelado não tem msg associada.
   const notifyStatus = isNotifiableStatus(order.status) ? order.status : null;
   const phone = normalizeCustomerPhone(order.customerPhone);
-
   const notifyUrl = notifyStatus
     ? buildWhatsAppUrl(
         phone.digits,
         customerNotifyMessage(order, notifyStatus, { pixKey: store?.pixKey ?? '' }),
       )
     : null;
+  const notifyLabel = notifyStatus ? `💬 Avisar: ${notifyStatus.toLowerCase()}` : null;
 
   const routeUrl =
     order.orderType === 'entrega'
@@ -302,39 +308,102 @@ function OrderActions({ order, store }: { order: Order; store: Store | null }) {
         )
       : null;
 
-  if (!notifyUrl && !routeUrl) return null;
+  const next = NEXT_STATUS[order.status];
+  const isFinal = order.status === 'Entregue';
+  const isCancelled = order.status === 'Cancelado';
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-3">
-      {notifyUrl &&
-        (phone.valid ? (
-          <a
-            href={notifyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
-          >
-            💬 Avisar cliente
-          </a>
-        ) : (
+    <div className="mt-3 flex flex-col gap-3 border-t border-stone-100 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      {/* Grupo principal: avançar + avisar + ver rota. */}
+      <div className="flex flex-wrap items-center gap-2">
+        {next && (
           <button
             type="button"
-            disabled
-            title="Telefone do cliente parece inválido (menos de 10 dígitos). Edite no banco se for o caso."
-            className="inline-flex cursor-not-allowed items-center gap-1 rounded-lg bg-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-500"
+            disabled={updating}
+            onClick={() => onChangeStatus(order, next.status)}
+            className="btn-primary px-4 py-2 text-sm"
           >
-            💬 Avisar cliente
+            → {next.label}
           </button>
-        ))}
-      {routeUrl && (
-        <a
-          href={routeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-lg bg-stone-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-800"
-        >
-          🗺 Ver rota
-        </a>
+        )}
+
+        {isFinal && (
+          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-800 ring-1 ring-emerald-200">
+            ✅ Concluído
+          </span>
+        )}
+
+        {notifyUrl &&
+          (phone.valid ? (
+            <a
+              href={notifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              {notifyLabel}
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title="Telefone do cliente parece inválido (menos de 10 dígitos). Edite no banco se for o caso."
+              className="inline-flex cursor-not-allowed items-center gap-1 rounded-lg bg-stone-200 px-3 py-2 text-sm font-semibold text-stone-500"
+            >
+              {notifyLabel}
+            </button>
+          ))}
+
+        {routeUrl && (
+          <a
+            href={routeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg bg-stone-700 px-3 py-2 text-sm font-semibold text-white hover:bg-stone-800"
+          >
+            🗺 Ver rota
+          </a>
+        )}
+      </div>
+
+      {/* Cancelar — discreto, separado, com confirmação inline. */}
+      {!isFinal && !isCancelled && (
+        <div className="text-right">
+          {confirmingCancel ? (
+            <div className="inline-flex items-center gap-2 rounded-lg bg-stone-50 px-2 py-1 ring-1 ring-stone-200">
+              <span className="text-xs text-stone-600">
+                Cancelar? <span className="text-stone-400">estorna pontos</span>
+              </span>
+              <button
+                type="button"
+                disabled={updating}
+                onClick={() => {
+                  setConfirmingCancel(false);
+                  onChangeStatus(order, 'Cancelado');
+                }}
+                className="rounded-md bg-tomato-600 px-2 py-1 text-xs font-semibold text-white hover:bg-tomato-700"
+              >
+                Sim, cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingCancel(false)}
+                className="rounded-md px-2 py-1 text-xs text-stone-600 hover:bg-stone-100"
+              >
+                Não
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={updating}
+              onClick={() => setConfirmingCancel(true)}
+              className="text-xs text-stone-400 underline-offset-2 hover:text-tomato-700 hover:underline"
+            >
+              Cancelar pedido
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
