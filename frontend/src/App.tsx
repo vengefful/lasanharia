@@ -78,9 +78,17 @@ function useDocumentTitleFromStore() {
   }, []);
 
   useEffect(() => {
-    if (!storeName) return;
+    // /admin* tem título FIXO "Painel Vovó" — bate com o que o script inline do
+    // index.html escreveu no carregamento. iOS 26 usa o <title> para nomear o ícone
+    // ao Adicionar à Tela de Início (ignora apple-mobile-web-app-title), então
+    // qualquer "Admin · <storeName>" vazaria como "Vovó Magal" no nome do ícone.
     const isAdmin = pathname.startsWith('/admin');
-    document.title = isAdmin ? `Admin · ${storeName}` : storeName;
+    if (isAdmin) {
+      document.title = 'Painel Vovó';
+      return;
+    }
+    if (!storeName) return;
+    document.title = storeName;
   }, [storeName, pathname]);
 }
 

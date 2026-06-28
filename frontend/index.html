@@ -29,6 +29,10 @@
           if (l) l.setAttribute('href', '/manifest-admin.json');
           var m = document.querySelector('meta[name="apple-mobile-web-app-title"]');
           if (m) m.setAttribute('content', 'Painel Vovó');
+          // iOS 26 ignora o apple-mobile-web-app-title e usa o <title> da página
+          // pra nomear o ícone ao Adicionar à Tela de Início. Fixamos curto aqui;
+          // o hook do React também respeita esse valor para não sobrescrever.
+          document.title = 'Painel Vovó';
         }
       })();
     </script>
