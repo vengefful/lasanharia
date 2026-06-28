@@ -80,6 +80,13 @@ export function StorefrontPage() {
             grouped.map((p) => <ProductCard key={p.id} product={p} disabled={!store.isOpen} />)
           )}
         </section>
+
+        {/* Acesso ao painel admin a partir da loja — discreto, padrão "área do administrador" no pé. */}
+        <footer className="mt-8 border-t border-stone-200/60 pt-4 pb-24 text-center text-xs text-stone-400">
+          <Link to="/admin" className="hover:text-stone-600 hover:underline">
+            Acesso administrativo
+          </Link>
+        </footer>
       </main>
 
       <CartFloatingButton />
