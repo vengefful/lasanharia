@@ -189,6 +189,7 @@ export function OrdersPage() {
                     {o.customerName} · {o.customerPhone} ·{' '}
                     {new Date(o.createdAt).toLocaleString('pt-BR')}
                   </p>
+                  <CustomerContact phone={o.customerPhone} />
                 </div>
               </div>
 
@@ -264,6 +265,63 @@ export function OrdersPage() {
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * Bloco de contato direto com o CLIENTE deste pedido — pro entregador
+ * ligar/whatsappear quando se perder na entrega. Conversa LIVRE, sem mensagem pronta
+ * (diferente do "Avisar: <status>", que manda template). Mesma normalização de telefone:
+ * só dígitos + prefixo 55.
+ */
+function CustomerContact({ phone: rawPhone }: { phone: string }) {
+  const phone = normalizeCustomerPhone(rawPhone);
+  const telUrl = phone.valid ? `tel:+${phone.digits}` : null;
+  const waUrl = phone.valid ? `https://wa.me/${phone.digits}` : null;
+  const invalidTitle = 'Telefone do cliente parece inválido (menos de 10 dígitos).';
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span className="text-xs uppercase tracking-wide text-stone-500">
+        Contato do cliente:
+      </span>
+      {telUrl ? (
+        <a
+          href={telUrl}
+          className="inline-flex items-center gap-1 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-semibold text-stone-700 hover:bg-stone-200"
+        >
+          📞 Ligar
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled
+          title={invalidTitle}
+          className="inline-flex cursor-not-allowed items-center gap-1 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-semibold text-stone-400"
+        >
+          📞 Ligar
+        </button>
+      )}
+      {waUrl ? (
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-semibold text-stone-700 hover:bg-stone-200"
+        >
+          💬 WhatsApp
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled
+          title={invalidTitle}
+          className="inline-flex cursor-not-allowed items-center gap-1 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-semibold text-stone-400"
+        >
+          💬 WhatsApp
+        </button>
+      )}
     </div>
   );
 }
