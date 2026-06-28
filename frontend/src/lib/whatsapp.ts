@@ -10,6 +10,20 @@ const TYPE_LABEL: Record<Order['orderType'], string> = {
 export type WhatsAppOptions = {
   /** Localização opcional anexada pelo cliente no checkout. Só aparece em entrega. */
   location?: { lat: number; lng: number } | null;
+  /**
+   * Dados de Fidelidade pra atendente. `pendingCredit` é o nº de pontos que serão
+   * creditados quando a Dona Maria mudar o status para Entregue (calculado no checkout
+   * a partir dos itens do carrinho com `countsForLoyalty=true`).
+   */
+  loyalty?: {
+    name: string;
+    /** Saldo atual depois do débito do resgate (se houve), antes do crédito da entrega. */
+    currentBalance: number;
+    /** Quantos pontos este pedido vai creditar ao entregar. */
+    pendingCredit: number;
+    /** True se o cliente resgatou 1 lasanha grátis neste pedido. */
+    isRedemption: boolean;
+  } | null;
 };
 
 export function buildWhatsAppMessage(order: Order, options: WhatsAppOptions = {}): string {
@@ -55,6 +69,24 @@ export function buildWhatsAppMessage(order: Order, options: WhatsAppOptions = {}
   if (order.notes) {
     lines.push('');
     lines.push(`Observações: ${order.notes}`);
+  }
+
+  if (options.loyalty) {
+    const l = options.loyalty;
+    lines.push('');
+    lines.push(`🍒 Fidelidade: ${l.name}`);
+    const future = l.currentBalance + l.pendingCredit;
+    if (l.pendingCredit > 0) {
+      lines.push(
+        `Saldo: ${l.currentBalance} ${l.currentBalance === 1 ? 'ponto' : 'pontos'}` +
+          ` (+${l.pendingCredit} ao entregar = ${future})`,
+      );
+    } else {
+      lines.push(`Saldo: ${l.currentBalance} ${l.currentBalance === 1 ? 'ponto' : 'pontos'}`);
+    }
+    if (l.isRedemption) {
+      lines.push('🎁 Resgate: 1 lasanha grátis neste pedido (combinar no acerto)');
+    }
   }
 
   return lines.join('\n');

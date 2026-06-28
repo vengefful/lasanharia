@@ -170,7 +170,7 @@ export function OrdersPage() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-bold">#{o.orderNumber}</h2>
                     {isNew && (
                       <span className="badge bg-emerald-100 text-emerald-800">novo</span>
@@ -180,6 +180,11 @@ export function OrdersPage() {
                     >
                       {o.status}
                     </span>
+                    {o.isRedemption && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-2.5 py-0.5 text-xs font-semibold text-pink-800 ring-1 ring-pink-200">
+                        🎁 Resgate: 1 grátis
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 text-sm text-stone-600">
                     {o.customerName} · {o.customerPhone} ·{' '}
@@ -250,6 +255,16 @@ export function OrdersPage() {
                 {o.notes && (
                   <div className="sm:col-span-2">
                     <span className="text-stone-500">Obs.:</span> {o.notes}
+                  </div>
+                )}
+                {o.loyaltyCustomer && (
+                  <div className="sm:col-span-2">
+                    <span className="text-stone-500">🍒 Fidelidade:</span>{' '}
+                    <span className="font-semibold">{o.loyaltyCustomer.name}</span>{' '}
+                    <span className="text-stone-500">
+                      · saldo {o.loyaltyCustomer.points} pts
+                      {o.pointsEarned > 0 && ` (+${o.pointsEarned} deste pedido já creditados)`}
+                    </span>
                   </div>
                 )}
               </div>

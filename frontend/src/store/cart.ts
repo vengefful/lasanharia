@@ -7,6 +7,8 @@ export type CartItem = {
   name: string;
   price: number; // centavos (snapshot só p/ exibição; backend recalcula)
   quantity: number;
+  /** Snapshot do flag de fidelidade do produto. Opcional p/ sobreviver a localStorage antigo. */
+  countsForLoyalty?: boolean;
 };
 
 type CartState = {
@@ -36,7 +38,13 @@ export const useCart = create<CartState>()(
           return {
             items: [
               ...state.items,
-              { productId: product.id, name: product.name, price: product.price, quantity: qty },
+              {
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                quantity: qty,
+                countsForLoyalty: product.countsForLoyalty ?? false,
+              },
             ],
           };
         }),

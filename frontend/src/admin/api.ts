@@ -120,6 +120,14 @@ export const adminApi = {
   // Resumo / clientes
   getStats: () => adminRequest<Stats>('/api/admin/stats'),
   getCustomers: () => adminRequest<CustomerRow[]>('/api/admin/customers'),
+
+  // Fidelidade
+  listLoyaltyCustomers: () => adminRequest<LoyaltyCustomerRow[]>('/api/admin/loyalty-customers'),
+  adjustLoyaltyPoints: (id: number, body: { delta: number; reason?: string }) =>
+    adminRequest<LoyaltyCustomerRow & { requestedDelta: number; reason: string | null }>(
+      `/api/admin/loyalty-customers/${id}/adjust`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
 };
 
 export type Stats = {
@@ -151,6 +159,19 @@ export type ProductInput = {
   imageUrl?: string | null;
   available?: boolean;
   featured?: boolean;
+  /** Programa de Fidelidade — true se cada unidade vendida vale 1 ponto. */
+  countsForLoyalty?: boolean;
+};
+
+export type LoyaltyCustomerRow = {
+  id: number;
+  phone: string;
+  name: string;
+  points: number;
+  totalEarned: number;
+  rewardsAvailable: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type CategoryInput = {

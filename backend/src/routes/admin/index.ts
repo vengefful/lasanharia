@@ -7,6 +7,7 @@ import { adminCategoriesRouter } from './categories';
 import { adminStoreRouter } from './store';
 import { adminStatsRouter } from './stats';
 import { adminCustomersRouter } from './customers';
+import { adminLoyaltyCustomersRouter } from './loyaltyCustomers';
 
 export const adminRouter = Router();
 
@@ -21,3 +22,4 @@ adminRouter.use('/categories', adminCategoriesRouter);
 adminRouter.use('/store', adminStoreRouter);
 adminRouter.use('/stats', adminStatsRouter);
 adminRouter.use('/customers', adminCustomersRouter);
+adminRouter.use('/loyalty-customers', adminLoyaltyCustomersRouter);

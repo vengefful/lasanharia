@@ -18,6 +18,8 @@ const productCreateSchema = z.object({
   imageUrl: z.string().url().optional().nullable(),
   available: z.boolean().default(true),
   featured: z.boolean().default(false),
+  // Programa de Fidelidade: cada unidade vendida deste produto vale 1 ponto (na entrega).
+  countsForLoyalty: z.boolean().default(false),
 });
 
 const productUpdateSchema = productCreateSchema.partial();

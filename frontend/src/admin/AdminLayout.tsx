@@ -5,6 +5,7 @@ const TABS: { to: string; label: string }[] = [
   { to: '/admin/summary', label: 'Resumo' },
   { to: '/admin/orders', label: 'Pedidos' },
   { to: '/admin/customers', label: 'Clientes' },
+  { to: '/admin/loyalty', label: 'Fidelidade' },
   { to: '/admin/products', label: 'Produtos' },
   { to: '/admin/categories', label: 'Categorias' },
   { to: '/admin/store', label: 'Loja' },

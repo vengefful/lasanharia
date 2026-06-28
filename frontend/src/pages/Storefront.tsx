@@ -5,6 +5,7 @@ import { Header } from '../components/Header';
 import { CategoryTabs } from '../components/CategoryTabs';
 import { ProductCard } from '../components/ProductCard';
 import { CartFloatingButton } from '../components/CartFloatingButton';
+import { Link } from 'react-router-dom';
 
 export function StorefrontPage() {
   const [store, setStore] = useState<Store | null>(null);
@@ -61,6 +62,16 @@ export function StorefrontPage() {
             pedidos voltam quando reabrirmos.
           </div>
         )}
+
+        <Link
+          to="/fidelidade"
+          className="mt-3 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm ring-1 ring-stone-200 hover:bg-cream-100"
+        >
+          <span>
+            🍒 <strong>Programa de Fidelidade</strong> — 10 lasanhas, 1 grátis
+          </span>
+          <span className="text-tomato-700">Ver meus pontos →</span>
+        </Link>
 
         <section className="mt-5 grid gap-3 pb-6">
           {grouped.length === 0 ? (

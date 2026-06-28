@@ -12,6 +12,7 @@ type FormState = {
   imageUrl: string;
   available: boolean;
   featured: boolean;
+  countsForLoyalty: boolean;
 };
 
 const EMPTY_FORM: FormState = {
@@ -23,6 +24,7 @@ const EMPTY_FORM: FormState = {
   imageUrl: '',
   available: true,
   featured: false,
+  countsForLoyalty: false,
 };
 
 export function ProductsPage() {
@@ -74,6 +76,7 @@ export function ProductsPage() {
       imageUrl: p.imageUrl ?? '',
       available: p.available,
       featured: p.featured,
+      countsForLoyalty: p.countsForLoyalty,
     });
   }
 
@@ -253,6 +256,7 @@ function ProductFormModal({
       imageUrl: state.imageUrl.trim() || null,
       available: state.available,
       featured: state.featured,
+      countsForLoyalty: state.countsForLoyalty,
     };
     try {
       if (state.id) await adminApi.updateProduct(state.id, payload);
@@ -358,6 +362,22 @@ function ProductFormModal({
             Em destaque
           </label>
         </div>
+
+        <label className="flex items-start gap-2 rounded-xl bg-cream-50 p-3 text-sm ring-1 ring-cream-200">
+          <input
+            type="checkbox"
+            checked={state.countsForLoyalty}
+            onChange={(e) => setState({ ...state, countsForLoyalty: e.target.checked })}
+            className="mt-0.5"
+          />
+          <div>
+            <div className="font-semibold text-stone-800">🍒 Conta para fidelidade</div>
+            <div className="text-xs text-stone-500">
+              Marque as <strong>lasanhas</strong>. Cada unidade vendida vale 1 ponto, creditado
+              quando o pedido for entregue. Refrigerantes e combos normalmente ficam desmarcados.
+            </div>
+          </div>
+        </label>
 
         <div className="mt-2 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-ghost px-4 py-2 text-sm">

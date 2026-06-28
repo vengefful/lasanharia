@@ -34,7 +34,7 @@ adminOrdersRouter.get('/', async (req, res) => {
   const { status, take } = querySchema.parse(req.query);
   const orders = await prisma.order.findMany({
     where: status ? { status } : undefined,
-    include: { items: true },
+    include: { items: true, loyaltyCustomer: true },
     orderBy: { createdAt: 'desc' },
     take,
   });

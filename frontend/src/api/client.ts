@@ -1,4 +1,4 @@
-import type { Category, CreateOrderInput, Order, Product, Store } from '../types';
+import type { Category, CreateOrderInput, LoyaltyInfo, Order, Product, Store } from '../types';
 
 const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
@@ -59,4 +59,6 @@ export const api = {
     request<Product[]>(`/api/products${categoryId ? `?categoryId=${categoryId}` : ''}`),
   createOrder: (body: CreateOrderInput) =>
     request<Order>('/api/orders', { method: 'POST', body: JSON.stringify(body) }),
+  getLoyalty: (phone: string) =>
+    request<LoyaltyInfo>(`/api/loyalty/${encodeURIComponent(phone)}`),
 };

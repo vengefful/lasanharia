@@ -3,6 +3,7 @@ import { StorefrontPage } from './pages/Storefront';
 import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
+import { LoyaltyPage } from './pages/LoyaltyPage';
 import { AdminLayout } from './admin/AdminLayout';
 import { RequireAdminAuth } from './admin/RequireAdminAuth';
 import { LoginPage as AdminLoginPage } from './admin/pages/LoginPage';
@@ -12,6 +13,7 @@ import { CustomersPage as AdminCustomersPage } from './admin/pages/CustomersPage
 import { ProductsPage as AdminProductsPage } from './admin/pages/ProductsPage';
 import { CategoriesPage as AdminCategoriesPage } from './admin/pages/CategoriesPage';
 import { StorePage as AdminStorePage } from './admin/pages/StorePage';
+import { LoyaltyPage as AdminLoyaltyPage } from './admin/pages/LoyaltyPage';
 
 export function App() {
   return (
@@ -21,6 +23,7 @@ export function App() {
       <Route path="/carrinho" element={<CartPage />} />
       <Route path="/checkout" element={<CheckoutPage />} />
       <Route path="/pedido/:orderNumber" element={<OrderSuccessPage />} />
+      <Route path="/fidelidade" element={<LoyaltyPage />} />
 
       {/* Admin */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -33,6 +36,7 @@ export function App() {
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="store" element={<AdminStorePage />} />
+          <Route path="loyalty" element={<AdminLoyaltyPage />} />
         </Route>
       </Route>
 

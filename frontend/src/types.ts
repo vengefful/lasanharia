@@ -33,6 +33,8 @@ export type Product = {
   imageUrl: string | null;
   available: boolean;
   featured: boolean;
+  /** Flag por produto que indica se ele soma pontos no Programa de Fidelidade. */
+  countsForLoyalty: boolean;
 };
 
 export type OrderType = 'entrega' | 'retirada';
@@ -50,6 +52,10 @@ export type CreateOrderInput = {
   paymentMethod: PaymentMethod;
   changeFor?: number; // centavos
   items: { productId: number; quantity: number }[];
+  /** Programa de Fidelidade (opcional). Quando vier, o pedido é vinculado/cria o cliente. */
+  loyalty?: { phone: string; name: string };
+  /** Quando true, debita 10 pontos do saldo do cliente identificado. Backend rejeita se saldo insuficiente. */
+  redeemReward?: boolean;
 };
 
 export type OrderItem = {
@@ -82,4 +88,27 @@ export type Order = {
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
+  /** Fidelidade — preenchidos quando o pedido está vinculado ao programa. */
+  loyaltyCustomerId: number | null;
+  isRedemption: boolean;
+  pointsEarned: number;
+  loyaltyCustomer?: {
+    id: number;
+    phone: string;
+    name: string;
+    points: number;
+    totalEarned: number;
+  } | null;
 };
+
+/** Resposta do GET /api/loyalty/:phone. */
+export type LoyaltyInfo =
+  | { exists: false; phone: string }
+  | {
+      exists: true;
+      phone: string;
+      name: string;
+      points: number;
+      totalEarned: number;
+      rewardsAvailable: number;
+    };

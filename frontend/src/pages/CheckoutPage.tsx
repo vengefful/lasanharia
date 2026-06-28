@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../store/cart';
 import { api, ApiError } from '../api/client';
-import type { OrderType, PaymentMethod, Store } from '../types';
+import type { LoyaltyInfo, OrderType, PaymentMethod, Store } from '../types';
 import { formatMoney, parseMoneyToCents } from '../lib/format';
 import { buildWhatsAppMessage, buildWhatsAppUrl } from '../lib/whatsapp';
 import { loadCustomerInfo, saveCustomerInfo } from '../lib/customerInfo';
@@ -47,6 +47,58 @@ export function CheckoutPage() {
   const [geoLocation, setGeoLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [geoError, setGeoError] = useState<string | null>(null);
+
+  // Programa de Fidelidade (opcional, opt-in explícito; identificado pelo telefone do checkout).
+  const [enrolled, setEnrolled] = useState(false);
+  const [loyaltyInfo, setLoyaltyInfo] = useState<LoyaltyInfo | null>(null);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [redeemReward, setRedeemReward] = useState(false);
+
+  // Quantas unidades elegíveis (countsForLoyalty=true) há no carrinho — usado pra:
+  //  - mostrar quantos pontos serão creditados na entrega (na msg do WhatsApp);
+  //  - habilitar/desabilitar o botão de resgate.
+  const eligibleUnits = items.reduce(
+    (sum, i) => (i.countsForLoyalty ? sum + i.quantity : sum),
+    0,
+  );
+  const hasEligibleItem = eligibleUnits > 0;
+
+  // Busca debounced do saldo quando o opt-in está ativo e o telefone tem ao menos 8 dígitos.
+  useEffect(() => {
+    if (!enrolled) {
+      setLoyaltyInfo(null);
+      return;
+    }
+    const phoneDigits = customerPhone.replace(/\D/g, '');
+    if (phoneDigits.length < 8) {
+      setLoyaltyInfo(null);
+      return;
+    }
+    setLoyaltyLoading(true);
+    const handle = setTimeout(() => {
+      api
+        .getLoyalty(phoneDigits)
+        .then((info) => setLoyaltyInfo(info))
+        .catch(() => setLoyaltyInfo(null))
+        .finally(() => setLoyaltyLoading(false));
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [enrolled, customerPhone]);
+
+  // Se o opt-in cair OU a elegibilidade some, desmarcar resgate automaticamente.
+  useEffect(() => {
+    if (!enrolled) setRedeemReward(false);
+  }, [enrolled]);
+  useEffect(() => {
+    const rewards = loyaltyInfo?.exists ? loyaltyInfo.rewardsAvailable : 0;
+    if (!hasEligibleItem || rewards < 1) setRedeemReward(false);
+  }, [hasEligibleItem, loyaltyInfo]);
+
+  const canRedeem =
+    enrolled &&
+    loyaltyInfo?.exists === true &&
+    loyaltyInfo.rewardsAvailable >= 1 &&
+    hasEligibleItem;
 
   function captureLocation() {
     if (!('geolocation' in navigator)) {
@@ -108,9 +160,12 @@ export function CheckoutPage() {
         return;
       }
 
+      const phoneDigits = customerPhone.replace(/\D/g, '');
+      const wantsLoyalty = enrolled && phoneDigits.length >= 8 && customerName.trim().length > 0;
+
       const order = await api.createOrder({
         customerName: customerName.trim(),
-        customerPhone: customerPhone.replace(/\D/g, ''),
+        customerPhone: phoneDigits,
         orderType,
         address: orderType === 'entrega' ? address.trim() : undefined,
         addressNumber: orderType === 'entrega' ? addressNumber.trim() : undefined,
@@ -120,6 +175,9 @@ export function CheckoutPage() {
         paymentMethod,
         changeFor: paymentMethod === 'Dinheiro' && changeFor ? changeFor : undefined,
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        // Fidelidade: backend é a fonte da verdade; aqui só sinaliza opt-in/resgate.
+        loyalty: wantsLoyalty ? { phone: phoneDigits, name: customerName.trim() } : undefined,
+        redeemReward: wantsLoyalty && redeemReward && canRedeem ? true : undefined,
       });
 
       // Persiste no aparelho do cliente — conveniência, não cadastro.
@@ -135,9 +193,18 @@ export function CheckoutPage() {
         paymentMethod,
       });
 
-      // location só entra na mensagem; nunca no POST. Some quando null.
+      // location e loyalty só entram na mensagem; nunca no POST direto.
+      // pendingCredit = pontos que serão creditados quando a Dona Maria mudar pra Entregue.
       const message = buildWhatsAppMessage(order, {
         location: orderType === 'entrega' ? geoLocation : null,
+        loyalty: order.loyaltyCustomer
+          ? {
+              name: order.loyaltyCustomer.name,
+              currentBalance: order.loyaltyCustomer.points,
+              pendingCredit: eligibleUnits,
+              isRedemption: order.isRedemption,
+            }
+          : null,
       });
       const url = buildWhatsAppUrl(store.whatsappNumber, message);
       clearCart();
@@ -316,6 +383,104 @@ export function CheckoutPage() {
                   </>
                 )}
               </div>
+            </div>
+          )}
+        </section>
+
+        <section className="card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold">🍒 Fidelidade</h2>
+              <p className="mt-1 text-sm text-stone-500">
+                A cada <strong>10 lasanhas</strong>, ganhe <strong>1 grátis</strong>. Cadastro
+                opcional, sem senha — identificamos pelo telefone acima.
+              </p>
+            </div>
+            <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={enrolled}
+                onChange={(e) => setEnrolled(e.target.checked)}
+              />
+              <span className="select-none font-medium">Quero acumular</span>
+            </label>
+          </div>
+
+          {enrolled && (
+            <div className="mt-4 grid gap-2 rounded-xl bg-cream-50 p-3 ring-1 ring-cream-200">
+              <div className="text-xs text-stone-500">
+                Telefone do programa:{' '}
+                <span className="font-semibold text-stone-700 tabular-nums">
+                  {customerPhone.replace(/\D/g, '') || '—'}
+                </span>
+              </div>
+
+              {customerPhone.replace(/\D/g, '').length < 8 && (
+                <p className="text-xs text-amber-700">
+                  Preencha seu telefone acima primeiro pra ver seu saldo.
+                </p>
+              )}
+
+              {loyaltyLoading && (
+                <p className="text-sm text-stone-500">Buscando seu saldo…</p>
+              )}
+
+              {!loyaltyLoading && loyaltyInfo && loyaltyInfo.exists === false && (
+                <p className="text-sm text-stone-700">
+                  ✨ Bem-vindo! Você será cadastrado neste pedido. Os pontos das lasanhas
+                  contam <strong>quando o pedido for entregue</strong>.
+                </p>
+              )}
+
+              {!loyaltyLoading && loyaltyInfo && loyaltyInfo.exists === true && (
+                <>
+                  <div className="text-sm text-stone-700">
+                    Olá, <strong>{loyaltyInfo.name}</strong>! Você tem{' '}
+                    <strong className="text-tomato-700">
+                      {loyaltyInfo.points} {loyaltyInfo.points === 1 ? 'ponto' : 'pontos'}
+                    </strong>
+                    .
+                  </div>
+                  {loyaltyInfo.rewardsAvailable >= 1 ? (
+                    <div className="text-sm font-semibold text-emerald-700">
+                      🎁 Você tem {loyaltyInfo.rewardsAvailable} lasanha
+                      {loyaltyInfo.rewardsAvailable === 1 ? '' : 's'} grátis disponível
+                      {loyaltyInfo.rewardsAvailable === 1 ? '' : 'is'}!
+                    </div>
+                  ) : (
+                    <div className="text-xs text-stone-500">
+                      Faltam <strong>{10 - (loyaltyInfo.points % 10)}</strong> pontos para a
+                      próxima lasanha grátis.
+                    </div>
+                  )}
+
+                  {canRedeem && (
+                    <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-lg border border-dashed border-emerald-400 bg-emerald-50 p-3">
+                      <input
+                        type="checkbox"
+                        checked={redeemReward}
+                        onChange={(e) => setRedeemReward(e.target.checked)}
+                        className="mt-0.5"
+                      />
+                      <div className="text-sm">
+                        <div className="font-semibold text-emerald-800">
+                          Usar 1 lasanha grátis (−10 pontos)
+                        </div>
+                        <div className="mt-0.5 text-xs text-emerald-700">
+                          O total exibido aqui <strong>não</strong> inclui o desconto — a
+                          lasanha grátis é combinada com a loja no WhatsApp/no acerto.
+                        </div>
+                      </div>
+                    </label>
+                  )}
+
+                  {loyaltyInfo.rewardsAvailable >= 1 && !hasEligibleItem && (
+                    <p className="mt-1 text-xs text-stone-500">
+                      Pra usar a lasanha grátis, inclua pelo menos 1 lasanha no carrinho.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           )}
         </section>
