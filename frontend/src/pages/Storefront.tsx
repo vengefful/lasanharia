@@ -6,6 +6,7 @@ import { CategoryTabs } from '../components/CategoryTabs';
 import { ProductCard } from '../components/ProductCard';
 import { CartFloatingButton } from '../components/CartFloatingButton';
 import { Link } from 'react-router-dom';
+import { useAdminAuth } from '../admin/auth';
 
 export function StorefrontPage() {
   const [store, setStore] = useState<Store | null>(null);
@@ -47,6 +48,7 @@ export function StorefrontPage() {
 
   return (
     <div className="mx-auto min-h-full max-w-2xl bg-cream-50 pb-32">
+      <AdminReturnBar />
       <Header store={store} />
 
       <main className="px-5 sm:px-8">
@@ -91,5 +93,23 @@ export function StorefrontPage() {
 
       <CartFloatingButton />
     </div>
+  );
+}
+
+/**
+ * Faixa fina mostrada SÓ pra quem está logada no admin (JWT em localStorage).
+ * O cliente comum não vê nada — fica null. Reage à mudança do token via Zustand,
+ * então sumir/aparecer é automático após login/logout no admin.
+ */
+function AdminReturnBar() {
+  const adminToken = useAdminAuth((s) => s.token);
+  if (!adminToken) return null;
+  return (
+    <Link
+      to="/admin"
+      className="block bg-stone-900 text-center text-sm font-medium text-white hover:bg-stone-800"
+    >
+      <span className="inline-block py-2">← Voltar ao painel</span>
+    </Link>
   );
 }

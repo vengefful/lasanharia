@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from './auth';
 
 const TABS: { to: string; label: string }[] = [
@@ -75,6 +75,16 @@ export function AdminLayout() {
             ))}
           </nav>
 
+          {/* Desktop/tablet: atalho para SAIR da área admin e ver a loja como cliente.
+              Navegação SPA (sem target=_blank) — funciona dentro do app standalone. */}
+          <Link
+            to="/"
+            className="hidden shrink-0 items-center gap-1 rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-semibold text-stone-700 hover:bg-cream-100 sm:inline-flex"
+            title="Abre o cardápio do cliente dentro deste app"
+          >
+            🍝 Ver cardápio
+          </Link>
+
           {/* Desktop/tablet: email + Sair à direita */}
           <div className="hidden items-center gap-2 text-sm sm:flex">
             <span className="text-stone-500">{email}</span>
@@ -123,6 +133,15 @@ export function AdminLayout() {
                   </NavLink>
                 </li>
               ))}
+              {/* Sai da área admin para a loja do cliente — visualmente separado das abas. */}
+              <li className="mt-1 border-t border-stone-100 pt-1">
+                <Link
+                  to="/"
+                  className="flex h-12 items-center gap-2 rounded-lg border border-stone-200 px-3 text-base font-semibold text-stone-700 hover:bg-cream-100"
+                >
+                  🍝 Ver cardápio
+                </Link>
+              </li>
             </ul>
             <div className="border-t border-stone-100 px-4 py-3">
               <div className="text-xs text-stone-500">Conectada como</div>
