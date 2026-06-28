@@ -26,10 +26,45 @@ export function StorefrontPage() {
       .catch((e: Error) => setError(e.message));
   }, []);
 
-  const grouped = useMemo(() => {
-    if (activeCategoryId == null) return products;
-    return products.filter((p) => p.categoryId === activeCategoryId);
-  }, [products, activeCategoryId]);
+  // Empilha categorias com seus produtos, na ordem do backend (categoryId asc + featured desc).
+  // Pula categoria sem produto disponível pra não mostrar seção vazia.
+  const sections = useMemo(() => {
+    const list: { category: Category; products: Product[] }[] = [];
+    for (const cat of categories) {
+      const prods = products.filter((p) => p.categoryId === cat.id);
+      if (prods.length > 0) list.push({ category: cat, products: prods });
+    }
+    return list;
+  }, [categories, products]);
+
+  // Scroll-spy: destaca a aba conforme a seção entra no topo (logo abaixo da sticky bar).
+  // Banda fina via rootMargin: -64px no topo (altura da sticky bar) e -85% embaixo
+  // (só conta o pedaço logo abaixo da barra). Quem cair nessa banda fica ativo;
+  // se mais de uma seção cair ao mesmo tempo (transições rápidas), pega a mais alta.
+  useEffect(() => {
+    if (sections.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length === 0) return;
+        const id = Number((visible[0].target as HTMLElement).dataset.sectionCat);
+        if (!Number.isNaN(id)) setActiveCategoryId(id);
+      },
+      { rootMargin: '-64px 0px -85% 0px', threshold: 0 },
+    );
+    document
+      .querySelectorAll<HTMLElement>('[data-section-cat]')
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [sections]);
+
+  function scrollToCategory(catId: number) {
+    setActiveCategoryId(catId); // feedback imediato; o observer reconfirma ao chegar
+    const el = document.getElementById(`cat-${catId}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   if (error) {
     return (
@@ -55,7 +90,7 @@ export function StorefrontPage() {
         <CategoryTabs
           categories={categories}
           activeId={activeCategoryId}
-          onChange={setActiveCategoryId}
+          onChange={scrollToCategory}
         />
 
         {!store.isOpen && (
@@ -75,13 +110,27 @@ export function StorefrontPage() {
           <span className="text-tomato-700">Ver meus pontos →</span>
         </Link>
 
-        <section className="mt-5 grid gap-3 pb-6">
-          {grouped.length === 0 ? (
-            <p className="py-12 text-center text-stone-500">Nenhum produto nessa categoria ainda.</p>
-          ) : (
-            grouped.map((p) => <ProductCard key={p.id} product={p} disabled={!store.isOpen} />)
-          )}
-        </section>
+        {sections.length === 0 && (
+          <p className="py-12 text-center text-stone-500">Nenhum produto cadastrado ainda.</p>
+        )}
+
+        {/* Uma seção por categoria, todas empilhadas. scroll-mt-16 (64px) compensa a sticky bar
+            quando o cliente toca uma aba e rolamos a seção pra começar logo abaixo dela. */}
+        {sections.map(({ category, products: prods }) => (
+          <section
+            key={category.id}
+            id={`cat-${category.id}`}
+            data-section-cat={category.id}
+            className="scroll-mt-16 pb-2"
+          >
+            <h2 className="mt-6 mb-3 text-xl font-bold text-stone-900">{category.name}</h2>
+            <div className="grid gap-3">
+              {prods.map((p) => (
+                <ProductCard key={p.id} product={p} disabled={!store.isOpen} />
+              ))}
+            </div>
+          </section>
+        ))}
 
         {/* Acesso ao painel admin a partir da loja — discreto, padrão "área do administrador" no pé. */}
         <footer className="mt-8 border-t border-stone-200/60 pt-4 pb-24 text-center text-xs text-stone-400">
