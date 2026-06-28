@@ -14,7 +14,6 @@ export function CartPage() {
 
   const [store, setStore] = useState<Store | null>(null);
   const [orderType, setOrderType] = useState<OrderType>('entrega');
-  const [neighborhood, setNeighborhood] = useState<string>('');
 
   useEffect(() => {
     api.getStore().then(setStore).catch(() => setStore(null));
@@ -23,12 +22,12 @@ export function CartPage() {
   const deliveryFee = orderType === 'retirada' ? 0 : store?.deliveryFee ?? 0;
   const total = subtotal + deliveryFee;
 
-  const canCheckout =
-    items.length > 0 && (orderType === 'retirada' || neighborhood.trim().length > 0);
+  // Bairro vive só no checkout — aqui o cliente só decide tipo + segue.
+  const canCheckout = items.length > 0;
 
   function goCheckout() {
     if (!canCheckout) return;
-    navigate('/checkout', { state: { orderType, neighborhood: neighborhood.trim() } });
+    navigate('/checkout', { state: { orderType } });
   }
 
   return (
@@ -110,20 +109,11 @@ export function CartPage() {
             </div>
 
             {orderType === 'entrega' && (
-              <div className="mt-4">
-                <label className="text-sm font-medium text-stone-700">Bairro</label>
-                <input
-                  value={neighborhood}
-                  onChange={(e) => setNeighborhood(e.target.value)}
-                  className="input mt-1"
-                  placeholder="Ex.: Centro"
-                  autoComplete="off"
-                />
-                <p className="mt-1 text-xs text-stone-500">
-                  Taxa única de entrega: {formatMoney(store?.deliveryFee ?? 0)}
-                  {(store?.deliveryFee ?? 0) === 0 ? ' (grátis)' : ''}
-                </p>
-              </div>
+              <p className="mt-3 text-xs text-stone-500">
+                Taxa única de entrega: {formatMoney(store?.deliveryFee ?? 0)}
+                {(store?.deliveryFee ?? 0) === 0 ? ' (grátis)' : ''}. O endereço completo
+                (rua, número, bairro) é preenchido no próximo passo.
+              </p>
             )}
           </section>
 

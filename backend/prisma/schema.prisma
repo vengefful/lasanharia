@@ -71,6 +71,9 @@ model Order {
   changeFor     Int?
   subtotal      Int
   deliveryFee   Int         @default(0)
+  // Desconto aplicado no total (centavos). Hoje só usado pelo resgate de fidelidade:
+  // = preço de UMA lasanha quando isRedemption=true. Snapshot — não recalcular do preço atual.
+  discountAmount Int        @default(0)
   total         Int
   status        String      @default("Pendente")
   items         OrderItem[]

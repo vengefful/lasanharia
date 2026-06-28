@@ -213,6 +213,12 @@ export function OrdersPage() {
                       {o.deliveryFee === 0 ? 'Grátis' : formatMoney(o.deliveryFee)}
                     </span>
                   </div>
+                  {o.discountAmount > 0 && (
+                    <div className="text-right text-emerald-700">
+                      Desconto fidelidade:{' '}
+                      <span className="tabular-nums">−{formatMoney(o.discountAmount)}</span>
+                    </div>
+                  )}
                   <div className="text-right text-base font-bold">
                     Total: <span className="tabular-nums">{formatMoney(o.total)}</span>
                   </div>

@@ -6,6 +6,7 @@ import type { LoyaltyInfo, OrderType, PaymentMethod, Store } from '../types';
 import { formatMoney, parseMoneyToCents } from '../lib/format';
 import { buildWhatsAppMessage, buildWhatsAppUrl } from '../lib/whatsapp';
 import { loadCustomerInfo, saveCustomerInfo } from '../lib/customerInfo';
+import { loadLoyaltyPhone, saveLoyaltyPhone } from '../lib/loyaltyStorage';
 
 const PAYMENT_METHODS: PaymentMethod[] = ['Pix', 'Cartão na entrega', 'Dinheiro'];
 
@@ -23,7 +24,11 @@ export function CheckoutPage() {
   // Pré-preenchimento por-aparelho (localStorage). Incoming (vindo do carrinho) ainda manda.
   const persisted = useMemo(() => loadCustomerInfo(), []);
   const [customerName, setCustomerName] = useState(persisted.customerName ?? '');
-  const [customerPhone, setCustomerPhone] = useState(persisted.customerPhone ?? '');
+  // Prioridade do telefone: customerInfo > loyaltyPhone (caso o cliente tenha consultado
+  // /fidelidade antes mas não tenha pedido neste aparelho) > vazio.
+  const [customerPhone, setCustomerPhone] = useState(
+    persisted.customerPhone ?? loadLoyaltyPhone(),
+  );
   const [orderType, setOrderType] = useState<OrderType>(
     incoming.orderType ?? persisted.orderType ?? 'entrega',
   );
@@ -142,7 +147,14 @@ export function CheckoutPage() {
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const deliveryFee = orderType === 'retirada' ? 0 : store?.deliveryFee ?? 0;
-  const total = subtotal + deliveryFee;
+
+  // Espelha o cálculo do backend p/ exibir o total já descontado ANTES do submit.
+  // Backend recomputa do banco — esse valor aqui é só preview; o pedido salvo usa o do servidor.
+  const eligibleUnitPrice =
+    items.find((i) => i.countsForLoyalty === true)?.price ?? 0;
+  const previewDiscount =
+    redeemReward && canRedeem ? eligibleUnitPrice : 0;
+  const total = subtotal + deliveryFee - previewDiscount;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -192,6 +204,9 @@ export function CheckoutPage() {
         reference: orderType === 'entrega' ? reference.trim() : '',
         paymentMethod,
       });
+      // Telefone da fidelidade em chave própria — útil se o customerInfo for
+      // limpo / aparelho compartilhado / cliente entra direto em /fidelidade.
+      if (wantsLoyalty) saveLoyaltyPhone(phoneDigits);
 
       // location e loyalty só entram na mensagem; nunca no POST direto.
       // pendingCredit = pontos que serão creditados quando a Dona Maria mudar pra Entregue.
@@ -467,8 +482,7 @@ export function CheckoutPage() {
                           Usar 1 lasanha grátis (−10 pontos)
                         </div>
                         <div className="mt-0.5 text-xs text-emerald-700">
-                          O total exibido aqui <strong>não</strong> inclui o desconto — a
-                          lasanha grátis é combinada com a loja no WhatsApp/no acerto.
+                          O total já vai aparecer com o desconto da lasanha grátis aplicado.
                         </div>
                       </div>
                     </label>
@@ -546,6 +560,12 @@ export function CheckoutPage() {
                 : formatMoney(deliveryFee)
             }
           />
+          {previewDiscount > 0 && (
+            <Line
+              label="Desconto fidelidade (1 lasanha grátis)"
+              value={`−${formatMoney(previewDiscount)}`}
+            />
+          )}
           <div className="my-3 h-px bg-stone-200" />
           <Line label="Total" value={formatMoney(total)} bold />
         </section>

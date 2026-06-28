@@ -83,6 +83,8 @@ export type Order = {
   changeFor: number | null;
   subtotal: number;
   deliveryFee: number;
+  /** Desconto aplicado no total (centavos). > 0 quando isRedemption — preço de 1 lasanha grátis. */
+  discountAmount: number;
   total: number;
   status: string;
   createdAt: string;

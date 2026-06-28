@@ -121,10 +121,25 @@ ordersRouter.post('/', async (req, res) => {
   //    Bairro é texto livre — não há mais tabela de zonas.
   const deliveryFee = input.orderType === 'entrega' ? store.deliveryFee : 0;
 
-  // 5. Total final.
-  const total = subtotal + deliveryFee;
+  // 4.b Desconto da fidelidade. Só aplica em resgate; é o preço de UMA lasanha
+  //     (item elegível), independente de quantas tenha no pedido — a recompensa é 1 grátis.
+  //     Pega o unitPrice do primeiro item elegível encontrado. Snapshot — o valor fica
+  //     gravado no Order (discountAmount) e não é recalculado depois.
+  let discountAmount = 0;
+  if (input.redeemReward) {
+    const eligibleItem = orderItems.find((i) => {
+      const p = productMap.get(i.productId);
+      return p?.countsForLoyalty === true;
+    });
+    // eligibleUnits > 0 garantido pelo check acima, então eligibleItem nunca é undefined aqui.
+    discountAmount = eligibleItem ? eligibleItem.unitPrice : 0;
+  }
 
-  // 6. Validação de troco (em centavos).
+  // 5. Total final — subtotal cheio menos o desconto, mais a entrega.
+  //    Garantido >= 0 porque discountAmount nunca > subtotal (é o preço de UM item já contado).
+  const total = subtotal + deliveryFee - discountAmount;
+
+  // 6. Validação de troco — usa o total JÁ DESCONTADO.
   if (input.paymentMethod === 'Dinheiro' && input.changeFor != null && input.changeFor < total) {
     throw new HttpError(
       400,
@@ -195,6 +210,7 @@ ordersRouter.post('/', async (req, res) => {
             changeFor: input.paymentMethod === 'Dinheiro' ? input.changeFor ?? null : null,
             subtotal,
             deliveryFee,
+            discountAmount,
             total,
             status: 'Pendente',
             // Fidelidade: pointsEarned começa 0 (preenchido na entrega).

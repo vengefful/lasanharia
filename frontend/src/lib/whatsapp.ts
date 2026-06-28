@@ -57,6 +57,9 @@ export function buildWhatsAppMessage(order: Order, options: WhatsAppOptions = {}
   if (order.deliveryFee > 0) {
     lines.push(`Taxa de entrega: ${formatMoney(order.deliveryFee)}`);
   }
+  if (order.discountAmount > 0) {
+    lines.push(`Desconto fidelidade (1 lasanha grátis): −${formatMoney(order.discountAmount)}`);
+  }
   lines.push(`Total: ${formatMoney(order.total)}`);
 
   lines.push('');

@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import type { LoyaltyInfo } from '../types';
+import { loadLoyaltyPhone, saveLoyaltyPhone } from '../lib/loyaltyStorage';
 
 const REWARD_THRESHOLD = 10;
 
 export function LoyaltyPage() {
-  const [phone, setPhone] = useState('');
+  // Pré-preenche com o telefone salvo no aparelho (se houver). Sempre editável.
+  const [phone, setPhone] = useState(() => loadLoyaltyPhone());
   const [info, setInfo] = useState<LoyaltyInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +28,9 @@ export function LoyaltyPage() {
         .then((data) => {
           setInfo(data);
           setError(null);
+          // Salva o telefone consultado no aparelho — só faz sentido persistir
+          // se ele realmente existe no programa (evita salvar lixo de digitação).
+          if (data.exists) saveLoyaltyPhone(data.phone);
         })
         .catch((err: Error) => {
           setInfo(null);
