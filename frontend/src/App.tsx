@@ -19,6 +19,7 @@ import { LoyaltyPage as AdminLoyaltyPage } from './admin/pages/LoyaltyPage';
 
 export function App() {
   useDocumentTitleFromStore();
+  usePwaInstallTags();
 
   return (
     <Routes>
@@ -81,4 +82,41 @@ function useDocumentTitleFromStore() {
     const isAdmin = pathname.startsWith('/admin');
     document.title = isAdmin ? `Admin · ${storeName}` : storeName;
   }, [storeName, pathname]);
+}
+
+/**
+ * Troca o <link rel="manifest"> e o título do iOS ("apple-mobile-web-app-title")
+ * conforme a aba atual. Importa pra PWA install:
+ *
+ *   - iOS Safari ≥ 16.4 respeita o `start_url` do manifest no Add to Home Screen,
+ *     então um manifest único com start_url=/ faria o ícone do PAINEL abrir a loja.
+ *     Aqui apontamos para um manifest-admin.json quando o usuário está em /admin*,
+ *     que tem start_url=/admin/summary.
+ *
+ *   - O título sob o ícone do iPhone vem do apple-mobile-web-app-title da aba —
+ *     também trocamos para "Painel Vovó" em /admin.
+ *
+ * Tudo via DOM porque o index.html é o mesmo para todas as rotas (SPA).
+ * O Safari relê essas tags ao abrir o Share menu, então o swap precisa só ter
+ * acontecido antes do usuário tocar "Adicionar à Tela de Início".
+ */
+function usePwaInstallTags() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const isAdmin = pathname.startsWith('/admin');
+    const manifestHref = isAdmin ? '/manifest-admin.json' : '/manifest.json';
+    const appleTitle = isAdmin ? 'Painel Vovó' : 'Vovó Magal';
+
+    const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    if (manifestLink && manifestLink.getAttribute('href') !== manifestHref) {
+      manifestLink.setAttribute('href', manifestHref);
+    }
+
+    const appleTitleMeta = document.querySelector<HTMLMetaElement>(
+      'meta[name="apple-mobile-web-app-title"]',
+    );
+    if (appleTitleMeta && appleTitleMeta.getAttribute('content') !== appleTitle) {
+      appleTitleMeta.setAttribute('content', appleTitle);
+    }
+  }, [pathname]);
 }
