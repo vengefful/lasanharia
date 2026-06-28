@@ -15,7 +15,9 @@ productsRouter.get('/', async (req, res) => {
   const products = await prisma.product.findMany({
     where: categoryId ? { categoryId } : undefined,
     include: { category: true },
-    orderBy: [{ categoryId: 'asc' }, { id: 'asc' }],
+    // Por categoria (asc), depois destacados primeiro (featured desc), depois id estável (asc).
+    // Garante ordem determinística — o front consome direto, sem reordenar.
+    orderBy: [{ categoryId: 'asc' }, { featured: 'desc' }, { id: 'asc' }],
   });
   res.json(products);
 });
