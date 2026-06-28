@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#cc3a1c" />
 
-    <!-- PWA -->
+    <!-- PWA — defaults da loja do CLIENTE; o script abaixo troca pro painel em /admin. -->
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
@@ -14,6 +14,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Vovó Magal" />
+
+    <!--
+      Swap síncrono no <head>, ANTES do React montar. iOS Safari "fotografa" o manifest
+      e o apple-mobile-web-app-title no carregamento inicial; modificar via React useEffect
+      é tarde demais. Este script roda durante o parse do HTML — quando o React inicia,
+      os atributos já estão corretos. Mesmo index.html serve / e /admin* (SPA via
+      try_files do Nginx), então a decisão precisa olhar a URL real.
+    -->
+    <script>
+      (function () {
+        if (location.pathname.indexOf('/admin') === 0) {
+          var l = document.querySelector('link[rel="manifest"]');
+          if (l) l.setAttribute('href', '/manifest-admin.json');
+          var m = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (m) m.setAttribute('content', 'Painel Vovó');
+        }
+      })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
