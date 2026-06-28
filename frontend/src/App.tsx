@@ -1,4 +1,6 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { api } from './api/client';
 import { StorefrontPage } from './pages/Storefront';
 import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
@@ -16,6 +18,8 @@ import { StorePage as AdminStorePage } from './admin/pages/StorePage';
 import { LoyaltyPage as AdminLoyaltyPage } from './admin/pages/LoyaltyPage';
 
 export function App() {
+  useDocumentTitleFromStore();
+
   return (
     <Routes>
       {/* Cliente */}
@@ -43,4 +47,38 @@ export function App() {
       <Route path="*" element={<StorefrontPage />} />
     </Routes>
   );
+}
+
+/**
+ * Mantém document.title sincronizado com o StoreConfig.storeName.
+ * Faz UMA busca em /api/store no mount; depois, qualquer mudança de rota só altera o prefixo
+ * ("Admin · " quando entra em /admin/*) — sem refetch a cada navegação.
+ * Se o nome mudar no painel, basta o cliente recarregar a página para o título acompanhar.
+ */
+function useDocumentTitleFromStore() {
+  const [storeName, setStoreName] = useState<string | null>(null);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getStore()
+      .then((s) => {
+        if (!cancelled) setStoreName(s.storeName);
+      })
+      .catch(() => {
+        // GET /api/store falhou (loja não configurada, rede etc) — fallback neutro,
+        // ainda melhor que deixar "Carregando…" pra sempre.
+        if (!cancelled) setStoreName('Lasanharia');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!storeName) return;
+    const isAdmin = pathname.startsWith('/admin');
+    document.title = isAdmin ? `Admin · ${storeName}` : storeName;
+  }, [storeName, pathname]);
 }
