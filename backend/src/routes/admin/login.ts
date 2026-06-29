@@ -13,7 +13,8 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-const TOKEN_TTL = '12h';
+// Lê do env (default 30d). Pra mudar: ajustar JWT_EXPIRES_IN no .env e reiniciar.
+const TOKEN_TTL = env.JWT_EXPIRES_IN;
 
 adminLoginRouter.post('/', async (req, res) => {
   const { email, password } = loginSchema.parse(req.body);
@@ -26,8 +27,10 @@ adminLoginRouter.post('/', async (req, res) => {
   const ok = await bcrypt.compare(password, admin.passwordHash);
   if (!ok) throw fail();
 
+  // `expiresIn` aceita string com unidade (ex.: "30d", "12h"). Cast pra qualquer evita
+  // estreitamento do tipo do jsonwebtoken (StringValue) com string genérica do env.
   const token = jwt.sign({ sub: admin.id, email: admin.email }, env.JWT_SECRET, {
-    expiresIn: TOKEN_TTL,
+    expiresIn: TOKEN_TTL as jwt.SignOptions['expiresIn'],
   });
 
   res.json({

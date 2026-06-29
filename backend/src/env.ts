@@ -4,6 +4,13 @@ import { z } from 'zod';
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatório'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET precisa ter pelo menos 16 caracteres'),
+  // Validade do JWT do admin. Aceita os formatos do `jsonwebtoken` (ex.: "30d", "12h", "1y").
+  // Default 30d — a Vovó só relogou quando trocar de aparelho ou limpar dados.
+  JWT_EXPIRES_IN: z
+    .string()
+    .trim()
+    .regex(/^\d+\s*[smhdwy]$/i, 'JWT_EXPIRES_IN deve ser tipo "30d", "12h", "1y"')
+    .default('30d'),
   PORT: z.coerce.number().int().positive().default(3000),
 });
 
